@@ -157,6 +157,9 @@ func Logger() gin.HandlerFunc {
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
+		// Authentication payloads can contain arbitrary passwords and tokens,
+		// including malformed or truncated JSON that regex masking cannot protect.
+		omitBody := strings.EqualFold(strings.TrimRight(path, "/"), "/api/v1/auth/ldap/login")
 
 		isWikiStats := strings.HasPrefix(path, "/api/v1/knowledgebase/") && strings.HasSuffix(path, "/wiki/stats")
 		if strings.HasPrefix(path, "/assets/") || isWikiStats {
@@ -166,7 +169,7 @@ func Logger() gin.HandlerFunc {
 
 		// 读取请求体（在Next之前读取，因为Next会消费body）
 		var requestBody string
-		if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
+		if !omitBody && (c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH") {
 			requestBody = readRequestBody(c)
 		}
 
@@ -205,7 +208,7 @@ func Logger() gin.HandlerFunc {
 
 		// 读取响应体
 		responseBodyStr := ""
-		if responseBody.Len() > 0 {
+		if !omitBody && responseBody.Len() > 0 {
 			contentType := c.Writer.Header().Get("Content-Type")
 			if strings.Contains(contentType, "text/event-stream") {
 				responseBodyStr = "[SSE流式响应，已跳过]"

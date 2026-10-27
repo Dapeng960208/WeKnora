@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>帮助与文档 · 使用指南</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <script>
+    // Match the signed-in user's existing WeKnora theme preference.
+    (function () {
+      var media = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+      function applyTheme() {
+        var mode = 'light';
+        try {
+          var user = JSON.parse(localStorage.getItem('weknora_user') || '{}');
+          var saved = localStorage.getItem('WeKnora_' + (user && user.id ? String(user.id) : 'anon') + '_theme');
+          if (saved === 'dark' || saved === 'light' || saved === 'system') mode = saved;
+        } catch (_) { /* Storage can be unavailable in private browsing. */ }
+        document.documentElement.setAttribute('data-theme', mode === 'dark' || (mode === 'system' && media && media.matches) ? 'dark' : 'light');
+      }
+      applyTheme();
+      if (media && media.addEventListener) media.addEventListener('change', applyTheme);
+      window.addEventListener('storage', function (event) {
+        if (event.key === 'weknora_user' || (event.key && /^WeKnora_.*_theme$/.test(event.key))) applyTheme();
+      });
+    }());
+  </script>
+  <style>
+    :root { color-scheme: light; --page: #fff; --sidebar: #f9f9f9; --panel: #fff; --subtle: #f6f8f6; --text: #242424; --secondary: #666; --muted: #737373; --border: #e8e8e8; --green: #087c42; --green-bg: #e9f8ec; --tip-bg: #f3faf5; --tip-border: #ccebd4; --focus: #078b49; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; }
+    :root[data-theme="dark"] { color-scheme: dark; --page: #181818; --sidebar: #212121; --panel: #242424; --subtle: #2c2c2c; --text: #f1f1f1; --secondary: #c3c3c3; --muted: #999; --border: #383838; --green: #73d897; --green-bg: #173e2a; --tip-bg: #1d3025; --tip-border: #385d43; --focus: #73d897; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--text); background: var(--page); font-size: 14px; line-height: 1.7; }
+    a { color: inherit; }
+    button, a, summary { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+    .skip { position: fixed; z-index: 10; left: 12px; top: -80px; padding: 8px 12px; background: var(--page); color: var(--green); border: 1px solid var(--green); border-radius: 4px; }
+    .skip:focus { top: 12px; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { position: sticky; top: 0; flex: 0 0 228px; height: 100vh; overflow-y: auto; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 22px 16px 16px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; text-decoration: none; font-size: 15px; font-weight: 600; }
+    .brand img { width: 25px; height: 25px; object-fit: contain; }
+    .side-label { margin: 31px 8px 9px; color: var(--muted); font-size: 12px; }
+    .nav { display: grid; gap: 2px; }
+    .nav a { display: flex; align-items: center; gap: 10px; min-height: 37px; padding: 6px 10px; border-radius: 6px; text-decoration: none; color: var(--secondary); }
+    .nav a:hover, .nav a[aria-current="location"] { color: var(--green); background: var(--green-bg); }
+    .nav-icon { width: 20px; color: inherit; font-size: 12px; font-weight: 600; text-align: center; }
+    .sidebar-footer { margin: auto 8px 0; padding-top: 24px; color: var(--muted); font-size: 12px; }
+    .main { min-width: 0; flex: 1; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 62px; padding: 0 36px; border-bottom: 1px solid var(--border); }
+    .crumb { color: var(--secondary); font-size: 13px; }
+    .crumb strong { color: var(--text); font-weight: 500; }
+    .back { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 5px; text-decoration: none; color: var(--secondary); white-space: nowrap; }
+    .back:hover { color: var(--green); border-color: var(--green); }
+    .content { max-width: 1050px; padding: 34px 36px 70px; margin: 0 auto; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 24px; line-height: 1.4; font-weight: 600; }
+    .intro { margin-top: 8px; color: var(--secondary); }
+    .intro-note { display: flex; align-items: flex-start; gap: 10px; margin-top: 22px; padding: 12px 15px; border: 1px solid var(--tip-border); border-radius: 6px; background: var(--tip-bg); color: var(--secondary); }
+    .info { display: inline-flex; flex: 0 0 17px; width: 17px; height: 17px; margin-top: 3px; align-items: center; justify-content: center; border: 1px solid var(--green); border-radius: 50%; color: var(--green); font-size: 11px; font-weight: 700; line-height: 1; }
+    .overview { margin-top: 28px; }
+    .overview h2 { font-size: 16px; }
+    .overview p { margin-top: 3px; color: var(--secondary); font-size: 13px; }
+    .quick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+    .quick { min-width: 0; padding: 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); text-decoration: none; }
+    .quick:hover { border-color: var(--green); }
+    .quick span { display: block; color: var(--green); font-size: 12px; font-weight: 600; }
+    .quick strong { display: block; margin-top: 7px; font-size: 14px; font-weight: 600; }
+    .quick small { display: block; margin-top: 4px; color: var(--secondary); font-size: 12px; line-height: 1.5; }
+    .section { padding-top: 38px; scroll-margin-top: 24px; }
+    .section-head { display: flex; align-items: flex-start; gap: 12px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+    .section-icon { display: inline-flex; flex: 0 0 30px; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 6px; color: var(--green); background: var(--green-bg); font-size: 12px; font-weight: 600; }
+    .section-head h2 { font-size: 19px; line-height: 30px; font-weight: 600; }
+    .section-head p { color: var(--secondary); font-size: 13px; }
+    .section-body { padding: 19px 0 0 42px; }
+    h3 { margin-top: 23px; font-size: 15px; font-weight: 600; line-height: 1.5; }
+    h3:first-child { margin-top: 0; }
+    .section-body p, .section-body ol, .section-body ul { margin: 8px 0 0; }
+    ol, ul { padding-left: 21px; }
+    li { padding-left: 2px; margin: 6px 0; }
+    li::marker { color: var(--green); }
+    .muted { color: var(--secondary); }
+    .tip { margin-top: 15px; padding: 12px 14px; border-left: 3px solid var(--green); border-radius: 0 5px 5px 0; background: var(--tip-bg); color: var(--secondary); }
+    .tip strong { color: var(--text); }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+    .card { padding: 14px 16px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); }
+    .card h3 { margin: 0; font-size: 14px; }
+    .card p { margin-top: 5px; color: var(--secondary); font-size: 13px; }
+    .example { margin-top: 14px; padding: 14px 16px; border-radius: 6px; background: var(--subtle); }
+    .example strong { display: block; margin-bottom: 5px; font-size: 13px; }
+    .example p { margin: 5px 0 0; color: var(--secondary); }
+    .faq { margin-top: 2px; border-bottom: 1px solid var(--border); }
+    details { border-top: 1px solid var(--border); }
+    summary { position: relative; padding: 15px 28px 15px 0; cursor: pointer; list-style: none; font-weight: 500; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { position: absolute; right: 3px; content: '+'; color: var(--muted); font-size: 19px; font-weight: 400; line-height: 1.3; }
+    details[open] summary::after { content: '−'; }
+    details p { padding: 0 28px 15px 0; color: var(--secondary); }
+    .footer { margin-top: 42px; padding-top: 18px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+    @media (max-width: 850px) { .sidebar { flex-basis: 190px; } .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .content { padding-left: 28px; padding-right: 28px; } .topbar { padding: 0 28px; } }
+    @media (max-width: 620px) { .shell { display: block; } .sidebar { position: static; height: auto; padding: 14px 16px 0; border-right: 0; border-bottom: 1px solid var(--border); } .brand { padding: 0; } .side-label, .sidebar-footer { display: none; } .nav { display: flex; gap: 4px; overflow-x: auto; padding: 12px 0 8px; } .nav a { min-height: 34px; padding: 5px 10px; white-space: nowrap; } .nav-icon { display: none; } .topbar { height: auto; padding: 13px 20px; } .content { padding: 25px 20px 48px; } h1 { font-size: 22px; } .section { padding-top: 32px; } .section-body { padding-left: 0; } .quick-grid, .cards { grid-template-columns: 1fr; } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <div class="shell">
+    <aside class="sidebar" aria-label="帮助导航">
+      <a class="brand" href="./"><img src="./favicon.ico" alt=""><span>帮助与文档</span></a>
+      <div class="side-label">使用指南</div>
+      <nav class="nav" aria-label="指南目录">
+        <a href="#start"><span class="nav-icon" aria-hidden="true">01</span>登录与加入空间</a>
+        <a href="#knowledge"><span class="nav-icon" aria-hidden="true">02</span>浏览团队知识</a>
+        <a href="#chat"><span class="nav-icon" aria-hidden="true">03</span>开始对话</a>
+        <a href="#history"><span class="nav-icon" aria-hidden="true">04</span>对话与附件</a>
+        <a href="#upload"><span class="nav-icon" aria-hidden="true">05</span>上传资料</a>
+        <a href="#questions"><span class="nav-icon" aria-hidden="true">06</span>常见问题</a>
+      </nav>
+      <p class="sidebar-footer">内网使用指南<br>以当前空间权限和实际界面为准</p>
+    </aside>
+    <main class="main" id="main">
+      <header class="topbar"><div class="crumb">帮助与文档 <span aria-hidden="true">/</span> <strong>使用指南</strong></div><a class="back" href="./"><span aria-hidden="true">←</span> 返回平台</a></header>
+      <article class="content">
+        <h1>使用指南</h1>
+        <p class="intro">从登录、加入空间，到查找资料和开始对话，了解日常使用的基本步骤。</p>
+        <div class="intro-note"><span class="info" aria-hidden="true">i</span><span>新用户首次登录后需要加入空间；看到的知识库、智能体和可执行操作取决于所在空间及个人权限。</span></div>
+
+        <div class="overview">
+          <h2>从这里开始</h2>
+          <p>第一次使用时，可按以下顺序完成一次知识库问答。</p>
+          <div class="quick-grid">
+            <a class="quick" href="#start"><span>01</span><strong>登录并加入空间</strong><small>使用企业账号，接受邀请或切换空间</small></a>
+            <a class="quick" href="#knowledge"><span>02</span><strong>找到资料</strong><small>浏览团队已有知识库和文档</small></a>
+            <a class="quick" href="#chat"><span>03</span><strong>开始提问</strong><small>选择资料范围，描述具体问题</small></a>
+            <a class="quick" href="#references"><span>04</span><strong>核对回答</strong><small>如有引用，打开原文核实</small></a>
+          </div>
+        </div>
+
+        <section class="section" id="start">
+          <div class="section-head"><span class="section-icon" aria-hidden="true">01</span><div><h2>登录与加入空间</h2><p>账号用于登录；空间决定你能访问哪些团队资料。</p></div></div>
+          <div class="section-body">
+            <h3>登录系统</h3>
+            <ol><li>在登录页选择<strong>企业账号登录</strong>。</li><li>输入公司 AD 用户名和密码，点击「企业账号登录」。</li><li>首次通过认证且符合条件时，系统会自动创建账号。已有本地账号的用户也可以选择「邮箱登录」。</li></ol>
+            <div class="tip"><strong>注意：</strong>两种登录入口分别验证，不会自动切换。请勿将密码发送给他人。</div>
+            <h3>接受空间邀请</h3>
+            <ol><li>首次登录后如果还没有空间，请联系管理员邀请你加入需要的空间。</li><li>在没有空间的页面点击「查看邀请」，在「我的邀请」中找到邀请并点击「接受」。</li><li>如果管理员设置了自动加入，账号可能已直接成为成员，无需手动接受；有待处理邀请时，也可查看页面右上角的通知铃铛。</li></ol>
+            <h3>切换到其他空间</h3>
+            <ol><li>点击侧栏左下角的头像或空间名称。</li><li>将鼠标移到弹出菜单中的当前空间一行，展开空间列表。</li><li>选择要进入的空间。不同空间中的资料和可用操作可能不同。</li></ol>
+            <p class="muted">看不到目标空间时，先确认是否已接受邀请；仍无法看到时，请联系空间管理员。</p>
+          </div>
+        </section>
+
+        <section class="section" id="knowledge">
+          <div class="section-head"><span class="section-icon" aria-hidden="true">02</span><div><h2>浏览团队知识</h2><p>找到自己有权限访问的资料，再决定浏览原文或用于提问。</p></div></div>
+          <div class="section-body">
+            <ol><li>点击左侧<strong>知识库</strong>。可根据页面提供的「全部」「收藏」「最近」「本空间」或共享范围查找，实际选项取决于权限。</li><li>打开目标知识库。文档库可浏览文件；FAQ 库主要整理问题和答案。</li><li>在库内按文件名、类型、标签或处理状态筛选；点击文档可查看原文或分段内容。</li></ol>
+            <p>如果知识库启用了 Wiki 并显示相应页签，也可以按主题浏览整理后的页面。并非所有知识库都会显示 Wiki。</p>
+            <div class="tip"><strong>找不到资料？</strong>先检查当前空间、共享范围及已选筛选条件，再联系有权限的同事或空间管理员。</div>
+          </div>
+        </section>
+
+        <section class="section" id="chat">
+          <div class="section-head"><span class="section-icon" aria-hidden="true">03</span><div><h2>开始对话</h2><p>选择合适的资料范围，提出具体问题，并核对重要结论。</p></div></div>
+          <div class="section-body">
+            <h3>发起一次问答</h3>
+            <ol><li>点击左侧<strong>新对话</strong>。</li><li>根据界面提供的选项，选择「快速问答」或「智能推理」等可用智能体。</li><li>在输入区域使用 <strong>@</strong> 选择有权限的知识库或文件；选中后会出现标签，可通过标签上的 × 移除。</li><li>输入问题并发送。回答生成时可以停止；完成后可继续追问。</li></ol>
+            <div class="cards"><div class="card"><h3>快速问答</h3><p>适合依据资料查找事实、解释概念或总结内容。</p></div><div class="card"><h3>智能推理</h3><p>适合需要分步骤分析的问题；可用能力以空间中的配置为准。</p></div></div>
+            <div class="example"><strong>提问示例</strong><p>“根据选中的资料，列出申请流程的主要步骤，并指出需要准备的材料。”</p><p>问题越具体，范围越清楚，通常越容易得到有用的回答。</p></div>
+            <h3 id="references">查看引用与核对原文</h3>
+            <p>如果回答中出现引用角标，可点击角标或打开引用面板，查看相应原文。不是每条回答都有引用；如果没有检索到相关资料，回答可能直接由模型生成。重要信息应结合原文和实际情况核实。</p>
+          </div>
+        </section>
+
+        <section class="section" id="history">
+          <div class="section-head"><span class="section-icon" aria-hidden="true">04</span><div><h2>管理对话与附件</h2><p>继续之前的讨论，或在本次会话中临时添加材料。</p></div></div>
+          <div class="section-body">
+            <h3>继续历史对话</h3>
+            <p>侧栏按时间显示历史对话。点击某条对话即可查看并继续提问；对话菜单提供置顶、重命名、清空消息和删除等操作。</p>
+            <p class="muted">清空或删除前请确认内容；删除后的对话或消息不能从该页面恢复。</p>
+            <h3>添加会话附件</h3>
+            <ol><li>在对话输入区域点击回形针，选择文件并等待页面完成处理。</li><li>结合附件输入问题，然后发送。实际支持的类型、大小及处理状态以页面提示为准。</li></ol>
+            <div class="tip"><strong>临时附件与知识库不同：</strong>会话附件只用于当前会话上下文，不会自动加入团队共享知识库，且会按部署策略清理。需要长期共享时，请由有写入权限的成员上传到知识库。</div>
+          </div>
+        </section>
+
+        <section class="section" id="upload">
+          <div class="section-head"><span class="section-icon" aria-hidden="true">05</span><div><h2>上传资料</h2><p>此操作需要知识库写入权限；没有上传需求时可直接使用已有资料。</p></div></div>
+          <div class="section-body">
+            <ol><li>在「知识库」中打开有写入权限的文档库，点击<strong>添加文档</strong>。</li><li>根据界面可用选项选择上传文档、上传文件夹或导入网页，并按提示确认。上传文件夹时请保持页面打开。</li><li>查看文档列表中的处理状态。上传成功不等于解析完成；等待「已完成」后再围绕内容提问。</li></ol>
+            <p>常见状态包括「等待中」「处理中」「整理优化中」「已完成」和「失败」。处理时间取决于文件和服务状态；格式、大小和可用选项以界面提示为准。</p>
+            <div class="tip">遇到失败时先查看页面错误提示、确认文件格式和大小；需要重新解析或删除时，请确认自己有相应权限并留意操作提示。</div>
+          </div>
+        </section>
+
+        <section class="section" id="questions">
+          <div class="section-head"><span class="section-icon" aria-hidden="true">06</span><div><h2>常见问题</h2><p>遇到问题时，可以先按下面的方法检查。</p></div></div>
+          <div class="section-body">
+            <div class="faq">
+              <details><summary>无法使用企业账号登录怎么办？</summary><p>确认选择的是「企业账号登录」，输入公司 AD 用户名和密码。若仍失败，请联系管理员检查账号状态及登录配置，不要把密码发给他人。</p></details>
+              <details><summary>登录后没有空间，或看不到团队资料？</summary><p>确认已接受邀请或已被自动加入；通过左下角菜单切换到正确空间，并检查知识库的共享范围及筛选条件。仍无法访问时请联系空间管理员。</p></details>
+              <details><summary>上传成功后，为什么回答还找不到文档？</summary><p>检查文档处理状态是否已完成，并确认对话中通过 @ 选择了对应的知识库或文件。可换成更具体的关键词再试；如果解析失败，请查看提示并联系有权限的成员。</p></details>
+              <details><summary>为什么回答没有引用，或者内容不准确？</summary><p>检查是否选对资料范围和空间，尝试说明具体主题、时间或文件名。部分回答可能没有检索到相关资料；对于重要结论，请查看原文并人工核实。</p></details>
+              <details><summary>为什么看不到上传、修改或删除按钮？</summary><p>不同角色可执行的操作不同。请先确认当前空间和知识库；需要相应权限时联系空间管理员。</p></details>
+              <details><summary>页面提示解析或回答失败怎么办？</summary><p>记录页面提示、发生时间和操作步骤，稍后重试；仍有问题时联系管理员排查。不要发送密码或其他敏感凭据。</p></details>
+            </div>
+          </div>
+        </section>
+        <footer class="footer">本指南依据 WeKnora 官方入门资料整理，并结合当前内网使用方式调整。页面和操作权限以实际界面为准。</footer>
+      </article>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var links = Array.prototype.slice.call(document.querySelectorAll('.nav a'));
+      var sections = links.map(function (link) { return document.querySelector(link.getAttribute('href')); });
+      function update() {
+        var current = '#start';
+        sections.forEach(function (section) {
+          if (section && section.getBoundingClientRect().top <= 140) current = '#' + section.id;
+        });
+        links.forEach(function (link) {
+          if (link.getAttribute('href') === current) link.setAttribute('aria-current', 'location');
+          else link.removeAttribute('aria-current');
+        });
+      }
+      window.addEventListener('hashchange', update);
+      window.addEventListener('scroll', update, { passive: true });
+      update();
+    }());
+  </script>
+</body>
+</html>

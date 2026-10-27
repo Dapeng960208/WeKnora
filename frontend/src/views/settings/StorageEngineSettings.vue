@@ -130,15 +130,9 @@
         <span v-else class="header-icon__text">{{ providerInitial(currentEngine as StorageProviderId) }}</span>
       </template>
 
-      <!-- 副标题：引擎描述 + inline 控制台/文档外链（若有） -->
+      <!-- 副标题：引擎描述 -->
       <template v-if="currentEngine" #subtitle>
         <span>{{ engineDescText }}</span>
-        <template v-for="link in engineLinks" :key="link.url">
-          <a :href="link.url" target="_blank" rel="noopener" class="doc-link doc-link--inline">
-            {{ link.label }}
-            <t-icon name="link" class="link-icon" />
-          </a>
-        </template>
       </template>
 
       <!-- 测试连接挪到 footer-left（local 不需要） -->
@@ -675,41 +669,6 @@ const engineDescText = computed((): string => {
   const key = `settings.storage.${currentEngine.value}Desc`
   const translated = t(key)
   return translated !== key ? translated : ''
-})
-
-// 控制台 / 文档外链 — 副标题尾部 inline 显示，与 ParserEngineSettings
-// 同款。各 provider 的 console / docs 链接来自原模板里的硬编码地址。
-const ENGINE_LINK_TABLE: Record<string, { console?: string; docs?: string }> = {
-  cos: {
-    console: 'https://console.cloud.tencent.com/cos',
-    docs: 'https://cloud.tencent.com/document/product/436',
-  },
-  tos: {
-    console: 'https://console.volcengine.com/tos',
-    docs: 'https://www.volcengine.com/docs/6349',
-  },
-  s3: {
-    console: 'https://aws.amazon.com/s3/',
-    docs: 'https://docs.aws.amazon.com/s3/',
-  },
-  oss: {
-    console: 'https://oss.console.aliyun.com/',
-    docs: 'https://help.aliyun.com/zh/oss/',
-  },
-  obs: {
-    console: 'https://obs.huaweicloud.com/',
-    docs: 'https://support.huaweicloud.com/obs/',
-  },
-}
-
-const engineLinks = computed((): Array<{ label: string; url: string }> => {
-  if (!currentEngine.value) return []
-  const links = ENGINE_LINK_TABLE[currentEngine.value]
-  if (!links) return []
-  const result: Array<{ label: string; url: string }> = []
-  if (links.console) result.push({ label: t('settings.storage.console'), url: links.console })
-  if (links.docs) result.push({ label: t('settings.storage.docs'), url: links.docs })
-  return result
 })
 
 // 是否在 footer 显示"测试连接"按钮 — 本地直接读写文件系统，无连接概念，
@@ -1583,37 +1542,6 @@ onMounted(loadAll)
 
   &.unavailable {
     color: var(--td-error-color);
-  }
-}
-
-// ---- 文档外链 ----
-.doc-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--td-brand-color);
-  text-decoration: none;
-  transition: color 0.15s ease;
-
-  &:hover {
-    color: var(--td-brand-color-active);
-  }
-
-  .link-icon {
-    font-size: 14px;
-  }
-
-  &--inline {
-    margin-left: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    vertical-align: baseline;
-
-    .link-icon {
-      font-size: 12px;
-    }
   }
 }
 

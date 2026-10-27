@@ -27,11 +27,6 @@
             ? 'modelSettings.builtinModels.descriptionAdmin'
             : 'modelSettings.builtinModels.description') }}
         </p>
-        <a class="doc-link" href="https://github.com/Tencent/WeKnora/blob/main/docs/BUILTIN_MODELS.md" target="_blank"
-          rel="noopener noreferrer">
-          {{ $t('modelSettings.builtinModels.viewGuide') }}
-          <t-icon name="link" class="link-icon" />
-        </a>
       </div>
     </div>
 
@@ -911,10 +906,6 @@ onMounted(() => {
   font-size: 13px;
   line-height: 1.55;
   color: var(--td-text-color-secondary);
-}
-
-.builtin-models-hint .doc-link {
-  font-size: 13px;
 }
 
 .model-list-loading {

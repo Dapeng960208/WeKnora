@@ -77,7 +77,7 @@ let failedQueue: Array<{ resolve: Function; reject: Function }> = [];
 // must surface to the page (e.g. expired token), not trigger the
 // refresh-then-redirect-to-login flow (issue #1617). '/auth/register' already
 // covers '/auth/register-by-invite' via substring match.
-const PUBLIC_AUTH_PATHS = ['/auth/auto-setup', '/auth/login', '/auth/register', '/auth/oidc/', '/auth/invitations/lookup', '/api/v1/embed/'];
+const PUBLIC_AUTH_PATHS = ['/auth/auto-setup', '/auth/login', '/auth/ldap/login', '/auth/register', '/auth/oidc/', '/auth/invitations/lookup', '/api/v1/embed/'];
 
 function isPublicAuthRequest(url?: string): boolean {
   if (!url) return false;
@@ -268,6 +268,7 @@ export function postUpload(
   config: any = {},
 ): Promise<any> {
   return instance.post(url, data, {
+    timeout: 10 * 60 * 1000, // Large uploads can exceed the normal 30-second request timeout.
     ...config,
     headers: {
       "Content-Type": "multipart/form-data",

@@ -2169,6 +2169,12 @@ export default {
     passwordMismatch: 'Passwords do not match'
   },
   auth: {
+    loginMethod: 'Login method',
+    localLogin: 'Email login',
+    enterpriseLogin: 'Enterprise account login',
+    enterpriseUsername: 'Enterprise username',
+    enterpriseUsernamePlaceholder: 'Enter enterprise username',
+    enterpriseLoginFailed: 'Enterprise login failed. Check your credentials or contact your administrator.',
     login: 'Login',
     logout: 'Logout',
     oidcLogin: 'Sign in with OIDC',

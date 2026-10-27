@@ -246,10 +246,7 @@
             <!-- WeCom credentials -->
             <template v-if="formData.platform === 'wecom'">
               <div class="platform-link-hint">
-                <a href="https://work.weixin.qq.com/" target="_blank" rel="noopener noreferrer" class="doc-link">
-                  {{ $t('agentEditor.im.wecomConsole') }}
-                  <t-icon name="link" class="link-icon" />
-                </a>
+                <span>{{ $t('agentEditor.im.wecomConsole') }}</span>
                 <span class="hint-text">{{ $t('agentEditor.im.consoleTip') }}</span>
               </div>
               <template v-if="formData.mode === 'websocket'">
@@ -300,10 +297,7 @@
             <!-- Feishu / Lark credentials — same fields, different open platform -->
             <template v-if="formData.platform === 'feishu' || formData.platform === 'lark'">
               <div class="platform-link-hint">
-                <a :href="openPlatformConsole.url" target="_blank" rel="noopener noreferrer" class="doc-link">
-                  {{ $t(openPlatformConsole.labelKey) }}
-                  <t-icon name="link" class="link-icon" />
-                </a>
+                <span>{{ $t(openPlatformConsole) }}</span>
                 <span class="hint-text">{{ $t('agentEditor.im.consoleTip') }}</span>
               </div>
               <div class="form-item">
@@ -334,10 +328,7 @@
             <!-- Slack credentials -->
             <template v-if="formData.platform === 'slack'">
               <div class="platform-link-hint">
-                <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer" class="doc-link">
-                  {{ $t('agentEditor.im.slackConsole') }}
-                  <t-icon name="link" class="link-icon" />
-                </a>
+                <span>{{ $t('agentEditor.im.slackConsole') }}</span>
                 <span class="hint-text">{{ $t('agentEditor.im.consoleTip') }}</span>
               </div>
               <template v-if="formData.mode === 'websocket'">
@@ -365,10 +356,7 @@
             <!-- Telegram credentials -->
             <template v-if="formData.platform === 'telegram'">
               <div class="platform-link-hint">
-                <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" class="doc-link">
-                  {{ $t('agentEditor.im.telegramConsole') }}
-                  <t-icon name="link" class="link-icon" />
-                </a>
+                <span>{{ $t('agentEditor.im.telegramConsole') }}</span>
                 <span class="hint-text">{{ $t('agentEditor.im.consoleTip') }}</span>
               </div>
               <div class="form-item">
@@ -387,10 +375,7 @@
             <!-- DingTalk credentials -->
             <template v-if="formData.platform === 'dingtalk'">
               <div class="platform-link-hint">
-                <a href="https://open.dingtalk.com/" target="_blank" rel="noopener noreferrer" class="doc-link">
-                  {{ $t('agentEditor.im.dingtalkConsole') }}
-                  <t-icon name="link" class="link-icon" />
-                </a>
+                <span>{{ $t('agentEditor.im.dingtalkConsole') }}</span>
                 <span class="hint-text">{{ $t('agentEditor.im.consoleTip') }}</span>
               </div>
               <div class="form-item">
@@ -413,10 +398,7 @@
             <!-- QQBot credentials -->
             <template v-if="formData.platform === 'qqbot'">
               <div class="platform-link-hint">
-                <a href="https://q.qq.com/" target="_blank" rel="noopener noreferrer" class="doc-link">
-                  {{ $t('agentEditor.im.qqbotConsole') }}
-                  <t-icon name="link" class="link-icon" />
-                </a>
+                <span>{{ $t('agentEditor.im.qqbotConsole') }}</span>
                 <span class="hint-text">{{ $t('agentEditor.im.consoleTip') }}</span>
               </div>
               <div class="form-item">
@@ -442,11 +424,7 @@
             <!-- Mattermost credentials -->
             <template v-if="formData.platform === 'mattermost'">
               <div class="platform-link-hint">
-                <a href="https://developers.mattermost.com/integrate/webhooks/outgoing/" target="_blank"
-                  rel="noopener noreferrer" class="doc-link">
-                  {{ $t('agentEditor.im.mattermostConsole') }}
-                  <t-icon name="link" class="link-icon" />
-                </a>
+                <span>{{ $t('agentEditor.im.mattermostConsole') }}</span>
                 <span class="hint-text">{{ $t('agentEditor.im.consoleTip') }}</span>
               </div>
               <div class="form-item">
@@ -488,10 +466,7 @@
                   placeholder="https://www.yunzhijia.com/gateway/robot/webhook/send?yzjtype=0&yzjtoken=..." />
                 <p class="form-desc">
                   {{ $t('agentEditor.im.yunzhijiaSendMsgUrlHint') }}
-                  <a href="https://www.yunzhijia.com/opendocs/docs.html#/guide/im/robot" target="_blank"
-                    rel="noopener noreferrer" class="doc-link">
-                    {{ $t('agentEditor.im.yunzhijiaRobotDoc') }}
-                  </a>
+                  {{ $t('agentEditor.im.yunzhijiaRobotDoc') }}
                 </p>
               </div>
               <div class="form-item">
@@ -506,10 +481,7 @@
                   :placeholder="$t('agentEditor.im.yunzhijiaAppIdPlaceholder')" />
                 <p class="form-desc">
                   {{ $t('agentEditor.im.yunzhijiaAppCredentialHint') }}
-                  <a href="https://www.yunzhijia.com/developers/" target="_blank" rel="noopener noreferrer"
-                    class="doc-link">
-                    {{ $t('agentEditor.im.yunzhijiaImageDoc') }}
-                  </a>
+                  {{ $t('agentEditor.im.yunzhijiaImageDoc') }}
                 </p>
               </div>
               <div class="form-item">
@@ -546,7 +518,7 @@
               <!-- QR code binding flow -->
               <div v-else class="wechat-qr-section">
                 <!-- Initial state: show bind button -->
-                <div v-if="!wechatQRImgUrl" class="wechat-bind-action">
+                <div v-if="!wechatQRContent" class="wechat-bind-action">
                   <t-button theme="default" variant="outline" :loading="wechatLoading" @click="startWeChatBinding">
                     <template #icon><t-icon name="scan" /></template>
                     {{ $t('agentEditor.im.wechatScanBind') }}
@@ -556,7 +528,8 @@
                 <!-- QR code displayed -->
                 <div v-else class="wechat-qr-display">
                   <div class="qr-container">
-                    <img :src="wechatQRImgUrl" alt="WeChat QR Code" class="qr-image" />
+                    <t-qrcode :value="wechatQRContent" :size="180" bg-color="#ffffff" color="#000000"
+                      borderless aria-label="WeChat QR Code" />
                     <div v-if="wechatQRStatus === 'expired'" class="qr-expired-overlay" @click="startWeChatBinding">
                       <t-icon name="refresh" class="refresh-icon" />
                       <span>{{ $t('agentEditor.im.wechatQRExpired') }}</span>
@@ -677,8 +650,8 @@ const platformOptions = computed(() => ([
 // open platform console. Bots must be created on the one matching the channel.
 const openPlatformConsole = computed(() =>
   formData.value.platform === 'lark'
-    ? { url: 'https://open.larksuite.com/', labelKey: 'agentEditor.im.larkConsole' }
-    : { url: 'https://open.feishu.cn/', labelKey: 'agentEditor.im.feishuConsole' },
+    ? 'agentEditor.im.larkConsole'
+    : 'agentEditor.im.feishuConsole',
 );
 
 const drawerTitle = computed(() => {
@@ -714,7 +687,6 @@ const knowledgeBases = ref<{ id: string; name: string }[]>([]);
 
 // WeChat QR code binding state
 const wechatQRContent = ref('');  // raw text to encode as QR code
-const wechatQRImgUrl = ref('');   // generated QR image URL
 const wechatQRCode = ref('');     // opaque token for polling status
 const wechatQRStatus = ref<string>('');
 const wechatLoading = ref(false);
@@ -811,7 +783,6 @@ function onPlatformChange(val: string | number | boolean) {
   formData.value.credentials = defaultCredentials();
   stopWeChatPolling();
   wechatQRContent.value = '';
-  wechatQRImgUrl.value = '';
   wechatQRCode.value = '';
   wechatQRStatus.value = '';
   // WeChat uses fixed mode/output
@@ -850,7 +821,6 @@ async function startWeChatBinding() {
   stopWeChatPolling();
   wechatLoading.value = true;
   wechatQRContent.value = '';
-  wechatQRImgUrl.value = '';
   wechatQRStatus.value = '';
 
   try {
@@ -859,9 +829,6 @@ async function startWeChatBinding() {
     wechatQRContent.value = res.data.qrcode_url;
     wechatQRCode.value = res.data.qrcode;
     wechatQRStatus.value = 'wait';
-
-    // Generate QR code image via public API (no extra npm dependency needed)
-    wechatQRImgUrl.value = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(res.data.qrcode_url)}`;
 
     // Start long-polling for scan status
     startStatusPolling();
@@ -892,7 +859,6 @@ async function pollOnce() {
       };
       stopWeChatPolling();
       wechatQRContent.value = '';
-      wechatQRImgUrl.value = '';
       MessagePlugin.success(t('agentEditor.im.wechatBindSuccess'));
       return;
     }
@@ -998,7 +964,6 @@ function resetForm() {
   channelNameTouched.value = false;
   stopWeChatPolling();
   wechatQRContent.value = '';
-  wechatQRImgUrl.value = '';
   wechatQRCode.value = '';
   wechatQRStatus.value = '';
   formData.value = {
@@ -1416,6 +1381,9 @@ onUnmounted(() => {
 
 .qr-container {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 200px;
   height: 200px;
   border: 1px solid var(--td-component-stroke);
@@ -1425,11 +1393,6 @@ onUnmounted(() => {
   // so the code remains scannable in dark mode.
   background: #fff;
 
-  .qr-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
 }
 
 .qr-expired-overlay {

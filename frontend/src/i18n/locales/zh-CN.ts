@@ -4537,6 +4537,12 @@ export default {
     }
   },
   auth: {
+    loginMethod: '登录方式',
+    localLogin: '邮箱登录',
+    enterpriseLogin: '企业账号登录',
+    enterpriseUsername: '企业账号',
+    enterpriseUsernamePlaceholder: '输入企业账号',
+    enterpriseLoginFailed: '企业账号登录失败，请检查账号密码或联系管理员。',
     login: '登录',
     logout: '退出',
     oidcLogin: '使用 OIDC 登录',

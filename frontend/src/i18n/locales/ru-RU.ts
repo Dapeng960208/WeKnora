@@ -4535,6 +4535,12 @@ export default {
     }
   },
   auth: {
+    loginMethod: 'Способ входа',
+    localLogin: 'Вход по email',
+    enterpriseLogin: 'Вход с корпоративной учётной записью',
+    enterpriseUsername: 'Корпоративное имя пользователя',
+    enterpriseUsernamePlaceholder: 'Введите корпоративное имя пользователя',
+    enterpriseLoginFailed: 'Не удалось войти. Проверьте данные или обратитесь к администратору.',
     login: 'Вход',
     logout: 'Выход',
     oidcLogin: 'Войти через OIDC',

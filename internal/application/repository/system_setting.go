@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/Tencent/WeKnora/internal/types/interfaces"
@@ -29,6 +30,9 @@ func NewSystemSettingRepository(db *gorm.DB) interfaces.SystemSettingRepository 
 // to ENV / default", so a 404 here is a normal control-flow signal,
 // not an error. Real DB errors (connection lost, etc.) surface up.
 func (r *systemSettingRepository) Get(ctx context.Context, key string) (*types.SystemSetting, error) {
+	if strings.HasPrefix(key, ldapBindingPrefix) {
+		return nil, nil
+	}
 	var s types.SystemSetting
 	err := r.db.WithContext(ctx).Where("key = ?", key).First(&s).Error
 	if err != nil {
@@ -40,11 +44,10 @@ func (r *systemSettingRepository) Get(ctx context.Context, key string) (*types.S
 	return &s, nil
 }
 
-// List returns every system_settings row, ordered by category then key
-// for stable management-UI rendering. No pagination — see type comment.
+// List excludes internal LDAP bindings from the settings UI and cache.
 func (r *systemSettingRepository) List(ctx context.Context) ([]*types.SystemSetting, error) {
 	var rows []*types.SystemSetting
-	err := r.db.WithContext(ctx).Order("category ASC, key ASC").Find(&rows).Error
+	err := r.db.WithContext(ctx).Where("key NOT LIKE ?", ldapBindingPrefix+"%").Order("category ASC, key ASC").Find(&rows).Error
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +61,9 @@ func (r *systemSettingRepository) List(ctx context.Context) ([]*types.SystemSett
 // the mutable columns prevents the migration's seeded id/created_at
 // from being overwritten.
 func (r *systemSettingRepository) Upsert(ctx context.Context, s *types.SystemSetting) error {
+	if s != nil && strings.HasPrefix(s.Key, ldapBindingPrefix) {
+		return errors.New("reserved system setting key")
+	}
 	return r.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
 			Columns: []clause.Column{{Name: "key"}},
@@ -82,6 +88,9 @@ func (r *systemSettingRepository) Upsert(ctx context.Context, s *types.SystemSet
 // rather than translating to gorm.ErrRecordNotFound so the caller's
 // happy path is a single nil check on err.
 func (r *systemSettingRepository) Delete(ctx context.Context, key string) (bool, error) {
+	if strings.HasPrefix(key, ldapBindingPrefix) {
+		return false, errors.New("reserved system setting key")
+	}
 	res := r.db.WithContext(ctx).Where("key = ?", key).Delete(&types.SystemSetting{})
 	if res.Error != nil {
 		return false, res.Error

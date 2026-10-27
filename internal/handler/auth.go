@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Tencent/WeKnora/internal/application/service"
+	"github.com/Tencent/WeKnora/internal/auth/ldapauth"
 	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/errors"
 	"github.com/Tencent/WeKnora/internal/handler/dto"
@@ -293,6 +294,57 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// User is already in the correct format from service
 
 	logger.Infof(ctx, "User logged in successfully, email: %s", email)
+	c.JSON(http.StatusOK, dto.NewAuthLoginResponse(response))
+}
+
+// LDAPLogin is deliberately separate from password and OIDC authentication.
+func (h *AuthHandler) LDAPLogin(c *gin.Context) {
+	ctx := c.Request.Context()
+	fail := func() { c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Login failed"}) }
+	if !ldapauth.IsEnabled() {
+		fail()
+		return
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 4096)
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if c.ShouldBindJSON(&req) != nil || len(req.Username) == 0 || len(req.Username) > 256 || len(req.Password) == 0 || len(req.Password) > 1024 {
+		fail()
+		return
+	}
+	cfg, err := ldapauth.ConfigFromEnv()
+	if err != nil || !cfg.Enabled {
+		logger.Warn(ctx, "LDAP login unavailable due to configuration")
+		fail()
+		return
+	}
+	identity, err := ldapauth.Authenticate(ctx, cfg, req.Username, req.Password)
+	if err != nil {
+		if stderrors.Is(err, ldapauth.ErrConflict) {
+			logger.Warn(ctx, "LDAP identity conflict; login rejected")
+		}
+		fail()
+		return
+	}
+	ldapService, ok := h.userService.(interface {
+		LoginWithLDAP(context.Context, *types.LDAPIdentity, types.TenantProvisioningMode) (*types.LoginResponse, error)
+	})
+	if !ok {
+		logger.Warn(ctx, "LDAP login service unavailable")
+		fail()
+		return
+	}
+	response, err := ldapService.LoginWithLDAP(ctx, &types.LDAPIdentity{
+		DirectoryID: cfg.DirectoryID, ID: identity.ID, Username: identity.Username,
+		Email: identity.Email, DisplayName: identity.DisplayName,
+	}, h.resolveDefaultTenantMode(ctx))
+	if err != nil || response == nil || !response.Success {
+		logger.Warn(ctx, "LDAP account binding or login rejected")
+		fail()
+		return
+	}
 	c.JSON(http.StatusOK, dto.NewAuthLoginResponse(response))
 }
 
@@ -829,6 +881,7 @@ func (h *AuthHandler) GetAuthConfig(c *gin.Context) {
 		"success":                  true,
 		"registration_mode":        mode,
 		"complex_password_enabled": complexPasswordEnabled,
+		"ldap_enabled":             ldapauth.IsEnabled(),
 	})
 }
 

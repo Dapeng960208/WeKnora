@@ -154,10 +154,6 @@
                   ? $t('settings.sandbox.secretConfigured')
                   : $t('settings.sandbox.cubeApiKeyOptional') }}
               </p>
-              <a class="inline-guide-link" :href="clusterGuideUrl" target="_blank" rel="noopener noreferrer">
-                <t-icon name="link" />
-                {{ $t('settings.sandbox.cubeApiKeyWhere') }}
-              </a>
             </div>
           </t-form-item>
           <t-form-item :label="$t('settings.sandbox.cubeDnsServers')"
@@ -178,10 +174,6 @@
                   ? $t('settings.sandbox.secretConfigured')
                   : $t('settings.sandbox.e2bApiKeyHelp') }}
               </p>
-              <a class="inline-guide-link" :href="e2bApiKeysUrl" target="_blank" rel="noopener noreferrer">
-                <t-icon name="link" />
-                {{ $t('settings.sandbox.e2bApiKeyWhere') }}
-              </a>
             </div>
           </t-form-item>
           <div class="form-grid form-grid--two">
@@ -357,10 +349,6 @@
           </div>
         </div>
         <t-alert v-if="templatesError" theme="warning" class="compact-alert" :message="templatesError" />
-        <a class="inline-guide-link" :href="clusterGuideUrl" target="_blank" rel="noopener noreferrer">
-          <t-icon name="link" />
-          {{ $t('settings.sandbox.howToBuildTemplate') }}
-        </a>
       </section>
 
       <section v-if="currentStepKey === 'runtime'" class="setting-drawer__section">
@@ -791,9 +779,6 @@ const isMaskedSecret = (value?: string) => value === secretPlaceholder
 // instead of latest: the latest tag still carries an image whose /workspace
 // the sandbox account cannot write.
 const defaultDockerImage = 'wechatopenai/weknora-sandbox:main'
-
-const clusterGuideUrl = 'https://github.com/Tencent/WeKnora/blob/main/docs/sandbox-cluster.md'
-const e2bApiKeysUrl = 'https://e2b.dev/dashboard?tab=keys'
 
 const backendOptions = computed(() => {
   const types = [...NAMED_SANDBOX_BACKEND_TYPES]
@@ -2154,24 +2139,6 @@ onUnmounted(stopTemplatePolling)
   gap: 4px;
   margin-top: 6px;
 
-  .inline-guide-link {
-    margin-top: 0;
-  }
-}
-
-.inline-guide-link {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: 5px;
-  margin-top: -4px;
-  color: var(--td-brand-color);
-  font-size: 12px;
-  text-decoration: none;
-
-  &:hover {
-    color: var(--td-brand-color-hover);
-  }
 }
 
 .runtime-fields :deep(.t-form__item) {
