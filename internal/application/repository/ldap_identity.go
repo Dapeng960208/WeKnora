@@ -20,7 +20,7 @@ const ldapBindingPrefix = "ldap.binding."
 // BindLDAPIdentity atomically associates a trusted directory identity with the
 // one local user having the same email. expectedUserID prevents a newly
 // provisioned account from being confused with a concurrent registration.
-func (r *userRepository) BindLDAPIdentity(ctx context.Context, key, email, expectedUserID string, allowExisting bool) (*types.User, error) {
+func (r *userRepository) BindLDAPIdentity(ctx context.Context, key, email, expectedUserID string, allowExisting, bootstrapAdmin bool) (*types.User, error) {
 	var result *types.User
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var users []types.User
@@ -60,6 +60,11 @@ func (r *userRepository) BindLDAPIdentity(ctx context.Context, key, email, expec
 			if json.Unmarshal(identityBinding.Value, &storedUser) != nil || json.Unmarshal(userBinding.Value, &storedIdentity) != nil || storedUser != user.ID || storedIdentity != key {
 				return ErrLDAPIdentityConflict
 			}
+			if bootstrapAdmin {
+				if err := initializeLDAPAdmin(tx, user); err != nil {
+					return err
+				}
+			}
 			result = user
 			return nil
 		}
@@ -78,8 +83,31 @@ func (r *userRepository) BindLDAPIdentity(ctx context.Context, key, email, expec
 				return ErrLDAPIdentityConflict
 			}
 		}
+		if bootstrapAdmin {
+			if err := initializeLDAPAdmin(tx, user); err != nil {
+				return err
+			}
+		}
 		result = user
 		return nil
 	})
 	return result, err
+}
+
+// The unique marker makes the grant one-time, including across application replicas.
+func initializeLDAPAdmin(tx *gorm.DB, user *types.User) error {
+	userJSON, _ := json.Marshal(user.ID)
+	marker := types.SystemSetting{Key: ldapBindingPrefix + "bootstrap.admin", Value: types.JSON(userJSON), ValueType: "string", Category: "internal", IsSecret: true}
+	insert := tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "key"}}, DoNothing: true}).Create(&marker)
+	if insert.Error != nil {
+		return insert.Error
+	}
+	if insert.RowsAffected == 0 {
+		return nil
+	}
+	if err := tx.Model(user).UpdateColumn("is_system_admin", true).Error; err != nil {
+		return err
+	}
+	user.IsSystemAdmin = true
+	return nil
 }

@@ -5429,7 +5429,8 @@ export default {
   auth: {
     loginMethod: '登录方式',
     localLogin: '邮箱登录',
-    enterpriseLogin: '企业账号登录',
+    enterpriseLogin: '企业统一认证',
+    enterpriseUnavailable: '企业统一认证暂不可用，请联系管理员。',
     enterpriseUsername: '企业账号',
     enterpriseUsernamePlaceholder: '输入企业账号',
     enterpriseLoginFailed: '企业账号登录失败，请检查账号密码或联系管理员。',

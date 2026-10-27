@@ -14,7 +14,7 @@ import (
 )
 
 type ldapIdentityRepository interface {
-	BindLDAPIdentity(context.Context, string, string, string, bool) (*types.User, error)
+	BindLDAPIdentity(context.Context, string, string, string, bool, bool) (*types.User, error)
 }
 
 // LoginWithLDAP receives an identity only after the LDAP password, account
@@ -39,7 +39,9 @@ func (s *userService) LoginWithLDAP(ctx context.Context, identity *types.LDAPIde
 	}
 	hash := sha256.Sum256([]byte(identity.DirectoryID + "\x00" + identity.ID))
 	key := hex.EncodeToString(hash[:])
-	user, err := repo.BindLDAPIdentity(ctx, key, email, "", ldapExistingUserAllowed(email))
+	adminEmail := strings.TrimSpace(os.Getenv("LDAP_ADMIN"))
+	bootstrapAdmin := adminEmail != "" && strings.EqualFold(email, adminEmail)
+	user, err := repo.BindLDAPIdentity(ctx, key, email, "", bootstrapAdmin || ldapExistingUserAllowed(email), bootstrapAdmin)
 	if errors.Is(err, apprepo.ErrUserNotFound) {
 		// Existing registration policy chooses tenantless or a personal space.
 		// The generated password is unknown to the directory user.
@@ -52,7 +54,7 @@ func (s *userService) LoginWithLDAP(ctx context.Context, identity *types.LDAPIde
 		if err != nil {
 			return nil, err
 		}
-		user, err = repo.BindLDAPIdentity(ctx, key, email, user.ID, false)
+		user, err = repo.BindLDAPIdentity(ctx, key, email, user.ID, false, bootstrapAdmin)
 	}
 	if err != nil {
 		return nil, err

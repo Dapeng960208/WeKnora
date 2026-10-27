@@ -2663,7 +2663,8 @@ export default {
   auth: {
     loginMethod: 'ログイン方法',
     localLogin: 'メールでログイン',
-    enterpriseLogin: '企業アカウントでログイン',
+    enterpriseLogin: '企業統合認証',
+    enterpriseUnavailable: '企業統合認証は現在利用できません。管理者にお問い合わせください。',
     enterpriseUsername: '企業アカウント',
     enterpriseUsernamePlaceholder: '企業アカウントを入力',
     enterpriseLoginFailed: '企業アカウントでログインできませんでした。認証情報を確認するか、管理者にお問い合わせください。',

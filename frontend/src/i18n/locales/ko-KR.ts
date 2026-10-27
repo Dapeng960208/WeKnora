@@ -5427,7 +5427,8 @@ export default {
   auth: {
     loginMethod: '로그인 방식',
     localLogin: '이메일 로그인',
-    enterpriseLogin: '기업 계정 로그인',
+    enterpriseLogin: '기업 통합 인증',
+    enterpriseUnavailable: '기업 통합 인증을 사용할 수 없습니다. 관리자에게 문의하세요.',
     enterpriseUsername: '기업 사용자 이름',
     enterpriseUsernamePlaceholder: '기업 사용자 이름 입력',
     enterpriseLoginFailed: '기업 계정 로그인에 실패했습니다. 계정 정보를 확인하거나 관리자에게 문의하세요.',

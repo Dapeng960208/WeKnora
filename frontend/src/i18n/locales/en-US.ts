@@ -2663,7 +2663,8 @@ export default {
   auth: {
     loginMethod: 'Login method',
     localLogin: 'Email login',
-    enterpriseLogin: 'Enterprise account login',
+    enterpriseLogin: 'Enterprise authentication',
+    enterpriseUnavailable: 'Enterprise authentication is unavailable. Please contact your administrator.',
     enterpriseUsername: 'Enterprise username',
     enterpriseUsernamePlaceholder: 'Enter enterprise username',
     enterpriseLoginFailed: 'Enterprise login failed. Check your credentials or contact your administrator.',

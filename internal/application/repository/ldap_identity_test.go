@@ -27,7 +27,7 @@ func ldapBindingTestDB(t *testing.T) (*gorm.DB, *userRepository) {
 func TestLDAPBindingHiddenFromSystemSettings(t *testing.T) {
 	db, repo := ldapBindingTestDB(t)
 	ldapBindingTestUser(t, db, "one", "alice@example.com", true)
-	if _, err := repo.BindLDAPIdentity(context.Background(), "identity", "alice@example.com", "", true); err != nil {
+	if _, err := repo.BindLDAPIdentity(context.Background(), "identity", "alice@example.com", "", true, false); err != nil {
 		t.Fatal(err)
 	}
 	settings := NewSystemSettingRepository(db)
@@ -51,19 +51,19 @@ func TestLDAPBindingRejectsIncompleteOrDeletedAssociation(t *testing.T) {
 	db, repo := ldapBindingTestDB(t)
 	ldapBindingTestUser(t, db, "one", "alice@example.com", true)
 	ctx := context.Background()
-	if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", true); err != nil {
+	if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", true, false); err != nil {
 		t.Fatal(err)
 	}
 	if err := db.Where("key = ?", ldapBindingPrefix+"user.one").Delete(&types.SystemSetting{}).Error; err != nil {
 		t.Fatal(err)
 	}
-	if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", true); !errors.Is(err, ErrLDAPIdentityConflict) {
+	if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", true, false); !errors.Is(err, ErrLDAPIdentityConflict) {
 		t.Fatalf("partial association: %v", err)
 	}
 	if err := db.Delete(&types.User{}, "id = ?", "one").Error; err != nil {
 		t.Fatal(err)
 	}
-	if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", true); !errors.Is(err, ErrLDAPIdentityConflict) {
+	if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", true, false); !errors.Is(err, ErrLDAPIdentityConflict) {
 		t.Fatalf("deleted user association: %v", err)
 	}
 }
@@ -92,7 +92,7 @@ func TestLDAPBindingConcurrentClaimsFailClosed(t *testing.T) {
 		go func(identity string) {
 			defer wg.Done()
 			<-start
-			_, err := repo.BindLDAPIdentity(context.Background(), identity, "alice@example.com", "", true)
+			_, err := repo.BindLDAPIdentity(context.Background(), identity, "alice@example.com", "", true, false)
 			results <- err
 		}(identity)
 	}
@@ -134,28 +134,28 @@ func TestLDAPBindingRejectsUnsafeMatches(t *testing.T) {
 		db, repo := ldapBindingTestDB(t)
 		ldapBindingTestUser(t, db, "one", "Alice@example.com", true)
 		ldapBindingTestUser(t, db, "two", "alice@example.com", true)
-		if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", true); !errors.Is(err, ErrLDAPIdentityConflict) {
+		if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", true, false); !errors.Is(err, ErrLDAPIdentityConflict) {
 			t.Fatalf("got %v, want identity conflict", err)
 		}
 	})
 	t.Run("existing user requires explicit approval", func(t *testing.T) {
 		db, repo := ldapBindingTestDB(t)
 		ldapBindingTestUser(t, db, "one", "alice@example.com", true)
-		if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", false); !errors.Is(err, ErrLDAPIdentityConflict) {
+		if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", false, false); !errors.Is(err, ErrLDAPIdentityConflict) {
 			t.Fatalf("got %v, want identity conflict", err)
 		}
 	})
 	t.Run("disabled local account", func(t *testing.T) {
 		db, repo := ldapBindingTestDB(t)
 		ldapBindingTestUser(t, db, "one", "alice@example.com", false)
-		if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", true); !errors.Is(err, ErrLDAPIdentityConflict) {
+		if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "", true, false); !errors.Is(err, ErrLDAPIdentityConflict) {
 			t.Fatalf("got %v, want identity conflict", err)
 		}
 	})
 	t.Run("expected newly provisioned user mismatch", func(t *testing.T) {
 		db, repo := ldapBindingTestDB(t)
 		ldapBindingTestUser(t, db, "one", "alice@example.com", true)
-		if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "other", false); !errors.Is(err, ErrLDAPIdentityConflict) {
+		if _, err := repo.BindLDAPIdentity(ctx, "identity", "alice@example.com", "other", false, false); !errors.Is(err, ErrLDAPIdentityConflict) {
 			t.Fatalf("got %v, want identity conflict", err)
 		}
 	})
@@ -163,13 +163,13 @@ func TestLDAPBindingRejectsUnsafeMatches(t *testing.T) {
 		db, repo := ldapBindingTestDB(t)
 		ldapBindingTestUser(t, db, "one", "alice@example.com", true)
 		ldapBindingTestUser(t, db, "two", "bob@example.com", true)
-		if _, err := repo.BindLDAPIdentity(ctx, "first-guid", "alice@example.com", "", true); err != nil {
+		if _, err := repo.BindLDAPIdentity(ctx, "first-guid", "alice@example.com", "", true, false); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := repo.BindLDAPIdentity(ctx, "first-guid", "bob@example.com", "", true); !errors.Is(err, ErrLDAPIdentityConflict) {
+		if _, err := repo.BindLDAPIdentity(ctx, "first-guid", "bob@example.com", "", true, false); !errors.Is(err, ErrLDAPIdentityConflict) {
 			t.Fatalf("reassign identity: got %v", err)
 		}
-		if _, err := repo.BindLDAPIdentity(ctx, "second-guid", "alice@example.com", "", true); !errors.Is(err, ErrLDAPIdentityConflict) {
+		if _, err := repo.BindLDAPIdentity(ctx, "second-guid", "alice@example.com", "", true, false); !errors.Is(err, ErrLDAPIdentityConflict) {
 			t.Fatalf("reassign user: got %v", err)
 		}
 	})
@@ -188,14 +188,14 @@ func TestLDAPBindingPreservesExistingPermissions(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	user, err := repo.BindLDAPIdentity(ctx, "stable-guid", "admin@example.com", "", true)
+	user, err := repo.BindLDAPIdentity(ctx, "stable-guid", "admin@example.com", "", true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !user.IsSystemAdmin || !user.CanAccessAllTenants || user.Avatar != "existing-avatar" || user.Email != "Admin@example.com" {
 		t.Fatalf("user permissions or profile changed: %#v", user)
 	}
-	if _, err := repo.BindLDAPIdentity(ctx, "stable-guid", "ADMIN@example.com", "", false); err != nil {
+	if _, err := repo.BindLDAPIdentity(ctx, "stable-guid", "ADMIN@example.com", "", false, false); err != nil {
 		t.Fatalf("existing binding did not persist: %v", err)
 	}
 	var got types.TenantMember

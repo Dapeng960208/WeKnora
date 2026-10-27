@@ -5429,7 +5429,8 @@ export default {
   auth: {
     loginMethod: '登入方式',
     localLogin: '電子郵件登入',
-    enterpriseLogin: '企業帳號登入',
+    enterpriseLogin: '企業統一認證',
+    enterpriseUnavailable: '企業統一認證暫時無法使用，請聯絡管理員。',
     enterpriseUsername: '企業帳號',
     enterpriseUsernamePlaceholder: '輸入企業帳號',
     enterpriseLoginFailed: '企業帳號登入失敗，請檢查帳號密碼或聯絡管理員。',

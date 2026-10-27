@@ -181,21 +181,14 @@
           </div>
 
           <div class="form-content">
-            <div v-if="ldapEnabled" class="login-methods" role="group" :aria-label="$t('auth.loginMethod')">
-              <t-button type="button" :theme="ldapMode ? 'default' : 'primary'" :aria-pressed="!ldapMode" :disabled="loading"
-                @click="setLoginMethod(false)">{{ $t('auth.localLogin') }}</t-button>
-              <t-button type="button" :theme="ldapMode ? 'primary' : 'default'" :aria-pressed="ldapMode" :disabled="loading"
-                @click="setLoginMethod(true)">{{ $t('auth.enterpriseLogin') }}</t-button>
-            </div>
-            <t-form ref="formRef" :data="formData" :rules="formRules" @submit="handleLogin" layout="vertical"
+            <p v-if="!authConfigLoading && !ldapEnabled" class="form-hint" role="alert">
+              {{ $t('auth.enterpriseUnavailable') }}
+            </p>
+            <t-form v-if="ldapEnabled" ref="formRef" :data="formData" :rules="formRules" @submit="handleLogin" layout="vertical"
               label-align="top">
-              <t-form-item v-if="ldapMode" :label="$t('auth.enterpriseUsername')" name="username">
+              <t-form-item :label="$t('auth.enterpriseUsername')" name="username">
                 <t-input v-model="formData.username" :placeholder="$t('auth.enterpriseUsernamePlaceholder')" type="text"
                   autocomplete="username" size="large" :disabled="loading" />
-              </t-form-item>
-              <t-form-item v-else :label="$t('auth.email')" name="email">
-                <t-input v-model="formData.email" :placeholder="$t('auth.emailPlaceholder')" type="text"
-                  autocomplete="email" size="large" :disabled="loading" />
               </t-form-item>
 
               <t-form-item :label="$t('auth.password')" name="password">
@@ -204,28 +197,28 @@
               </t-form-item>
 
               <t-button type="submit" theme="primary" size="large" block :loading="loading" class="submit-button">
-                {{ loading ? $t('auth.loggingIn') : (ldapMode ? $t('auth.enterpriseLogin') : $t('auth.login')) }}
-              </t-button>
-
-              <div class="register-cta" v-if="registrationEnabled">
-                <div class="register-cta__divider">
-                  <span>{{ $t('auth.firstTime') }}</span>
-                </div>
-                <t-button theme="default" variant="outline" size="large" block class="register-cta__button"
-                  :disabled="loading" @click="toggleMode">
-                  {{ $t('auth.createAccount') }}
-                </t-button>
-              </div>
-
-              <div v-if="oidcEnabled" class="oidc-divider">
-                <span>{{ $t('auth.orContinueWith') }}</span>
-              </div>
-
-              <t-button v-if="oidcEnabled" theme="default" size="large" block :loading="oidcLoading" :disabled="loading"
-                class="oidc-button" @click="handleOIDCLogin">
-                {{ oidcLoading ? $t('auth.redirectingToOIDC') : oidcLoginText }}
+                {{ loading ? $t('auth.loggingIn') : $t('auth.enterpriseLogin') }}
               </t-button>
             </t-form>
+
+            <div class="register-cta" v-if="registrationEnabled">
+              <div class="register-cta__divider">
+                <span>{{ $t('auth.firstTime') }}</span>
+              </div>
+              <t-button theme="default" variant="outline" size="large" block class="register-cta__button"
+                :disabled="loading" @click="toggleMode">
+                {{ $t('auth.createAccount') }}
+              </t-button>
+            </div>
+
+            <div v-if="oidcEnabled" class="oidc-divider">
+              <span>{{ $t('auth.orContinueWith') }}</span>
+            </div>
+
+            <t-button v-if="oidcEnabled" theme="default" size="large" block :loading="oidcLoading" :disabled="loading"
+              class="oidc-button" @click="handleOIDCLogin">
+              {{ oidcLoading ? $t('auth.redirectingToOIDC') : oidcLoginText }}
+            </t-button>
 
             <!-- Features list -->
             <div class="login-features">
@@ -342,7 +335,6 @@ import 'swiper/css'
 import 'swiper/css/effect-fade'
 import 'swiper/css/pagination'
 import {
-  login,
   ldapLogin,
   register,
   getOIDCAuthorizationURL,
@@ -407,7 +399,7 @@ const isRegisterMode = ref(false)
 const showLanguageMenu = ref(false)
 const oidcEnabled = ref(false)
 const ldapEnabled = ref(false)
-const ldapMode = ref(false)
+const authConfigLoading = ref(true)
 const oidcProviderName = ref('')
 // Wait for configuration before showing a registration entry.
 const registrationMode = ref('')
@@ -445,7 +437,6 @@ const currentLangOption = computed(() => languageOptions.find(l => l.value === c
 
 // Login form data
 const formData = reactive<{ [key: string]: any }>({
-  email: '',
   username: '',
   password: '',
 })
@@ -460,21 +451,8 @@ const registerData = reactive<{ [key: string]: any }>({
 
 // Login form validation rules
 const formRules = computed(() => ({
-  ...(ldapMode.value ? {
-    username: [{ required: true, message: t('auth.usernameRequired'), type: 'error' }],
-  } : {
-    email: [
-      { required: true, message: t('auth.emailRequired'), type: 'error' },
-      { email: true, message: t('auth.emailInvalid'), type: 'error' }
-    ],
-  }),
-  password: ldapMode.value
-    ? [{ required: true, message: t('auth.passwordRequired'), type: 'error' }]
-    : [
-      { required: true, message: t('auth.passwordRequired'), type: 'error' },
-      { min: 8, message: t('auth.passwordMinLength'), type: 'error' },
-      { max: 32, message: t('auth.passwordMaxLength'), type: 'error' }
-    ],
+  username: [{ required: true, message: t('auth.usernameRequired'), type: 'error' }],
+  password: [{ required: true, message: t('auth.passwordRequired'), type: 'error' }],
 }))
 
 // Register form validation rules
@@ -503,12 +481,6 @@ const registerRules = computed(() => ({
     }
   ]
 }))
-
-const setLoginMethod = (enterprise: boolean) => {
-  ldapMode.value = enterprise
-  formData.password = ''
-  nextTick(() => formRef.value?.clearValidate())
-}
 
 // Toggle login/register mode
 const toggleMode = () => {
@@ -623,10 +595,12 @@ const loadAuthConfig = async () => {
     const response = await getAuthConfig()
     registrationMode.value = response.success ? response.registration_mode : ''
     complexPasswordEnabled.value = response.complex_password_enabled
-    ldapEnabled.value = response.ldap_enabled === true
+    ldapEnabled.value = response.success === true && response.ldap_enabled === true
   } catch {
     registrationMode.value = ''
     complexPasswordEnabled.value = false
+  } finally {
+    authConfigLoading.value = false
   }
 }
 
@@ -675,15 +649,14 @@ const acceptAndEnter = async (token: string) => {
 
 // Handle login
 const handleLogin = async () => {
+  if (!ldapEnabled.value) return
   try {
     const valid = await formRef.value?.validate()
     if (valid !== true) return
 
     loading.value = true
 
-    const response = ldapMode.value
-      ? await ldapLogin({ username: formData.username, password: formData.password })
-      : await login({ email: formData.email, password: formData.password })
+    const response = await ldapLogin({ username: formData.username, password: formData.password })
 
     if (response.success) {
       if (inviteToken.value) {
@@ -695,15 +668,10 @@ const handleLogin = async () => {
       await persistLoginResponse(response)
       notifyLoginSuccess(response, t, tm, formatRole, roleIcon)
     } else {
-      MessagePlugin.error(ldapMode.value ? t('auth.enterpriseLoginFailed') : (response.message || t('auth.loginError')))
-    }
-  } catch (error: any) {
-    if (ldapMode.value) {
       MessagePlugin.error(t('auth.enterpriseLoginFailed'))
-    } else {
-      console.error('登录错误:', error)
-      MessagePlugin.error(error.message || t('auth.loginErrorRetry'))
     }
+  } catch {
+    MessagePlugin.error(t('auth.enterpriseLoginFailed'))
   } finally {
     loading.value = false
   }
@@ -838,14 +806,6 @@ onMounted(async () => {
 </script>
 
 <style lang="less" scoped>
-.login-methods {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-
-  > * { flex: 1; }
-}
-
 .login-layout {
   display: flex;
   width: 100%;
