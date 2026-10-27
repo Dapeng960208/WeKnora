@@ -2661,6 +2661,12 @@ export default {
     passwordMismatch: 'パスワードが一致しません'
   },
   auth: {
+    loginMethod: 'ログイン方法',
+    localLogin: 'メールでログイン',
+    enterpriseLogin: '企業アカウントでログイン',
+    enterpriseUsername: '企業アカウント',
+    enterpriseUsernamePlaceholder: '企業アカウントを入力',
+    enterpriseLoginFailed: '企業アカウントでログインできませんでした。認証情報を確認するか、管理者にお問い合わせください。',
     login: 'ログイン',
     logout: 'ログアウト',
     oidcLogin: 'OIDCでログイン',
@@ -7204,7 +7210,7 @@ export default {
       docsHint: 'インストール手順と完全なコマンドリファレンス',
       quickstart: 'クイックスタート',
       installTitle: 'CLIをインストール',
-      installDesc: 'GitとGo 1.26以上を使ってソースからビルドします。このmacOS / Linuxの例ではPATHの設定は現在のターミナルでのみ有効です。継続的に使う場合は、バイナリをPATH上のディレクトリに配置してください。',
+      installDesc: 'まず社内の配布先からWeKnoraのソースを入手してください。ビルドにはGo 1.26以上が必要です。このmacOS / Linuxの例ではPATHの設定は現在のターミナルでのみ有効です。継続的に使う場合は、バイナリをPATH上のディレクトリに配置してください。',
       connectTitle: 'このサーバに接続',
       connectDesc: 'weknoraという名前のプロファイルを作成して有効化し、メールアドレスとパスワードでサインインします。同名のプロファイルが既にある場合は別の名前を選び、MCPの例もそれに合わせて変更してください。',
       verifyTitle: '接続を確認',

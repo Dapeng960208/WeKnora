@@ -113,21 +113,8 @@
         <span v-else class="header-icon__text">{{ providerInitial(selectedProviderType.id) }}</span>
       </template>
 
-      <!--
-        Subtitle: provider 类型名 + 官方文档外链（若有）。
-      -->
       <template v-if="selectedProviderType" #subtitle>
         <span>{{ selectedProviderType.name }}</span>
-        <a
-          v-if="selectedProviderType.docs_url"
-          :href="selectedProviderType.docs_url"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="doc-link doc-link--inline"
-        >
-          {{ t('webSearchSettings.viewDocs') }}
-          <t-icon name="link" class="link-icon" />
-        </a>
       </template>
 
       <!--
@@ -996,35 +983,6 @@ onMounted(async () => {
   letter-spacing: 0.02em;
 }
 
-.doc-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--app-text-md);
-  font-weight: 500;
-  color: var(--td-brand-color);
-  text-decoration: none;
-  transition: color var(--app-motion-fast) ease;
-
-  &:hover {
-    color: var(--td-brand-color-active);
-  }
-
-  .link-icon {
-    font-size: var(--app-text-base);
-  }
-
-  &--inline {
-    margin-left: 6px;
-    font-size: var(--app-text-sm);
-    font-weight: 500;
-    vertical-align: baseline;
-
-    .link-icon {
-      font-size: var(--app-text-sm);
-    }
-  }
-}
 </style>
 
 <!--

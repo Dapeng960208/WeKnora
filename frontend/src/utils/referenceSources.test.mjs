@@ -28,6 +28,7 @@ test('buildReferenceList separates web and document references', () => {
   assert.equal(items.length, 2)
   assert.equal(items[0].kind, 'web')
   assert.equal(items[0].domain, 'example.com')
+  assert.equal('faviconUrl' in items[0], false)
   assert.equal(items[1].kind, 'document')
 })
 

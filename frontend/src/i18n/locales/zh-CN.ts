@@ -544,7 +544,7 @@ export default {
       docsHint: '安装说明与完整命令参考',
       quickstart: '快速开始',
       installTitle: '安装 CLI',
-      installDesc: '目前支持源码构建，需要 Git 和 Go 1.26+。以下示例适用于 macOS / Linux，PATH 设置仅在当前终端生效；长期使用请将二进制放入 PATH 目录。',
+      installDesc: '请先通过内部渠道获取 WeKnora 源码。源码构建需要 Go 1.26+。以下示例适用于 macOS / Linux，PATH 设置仅在当前终端生效；长期使用请将二进制放入 PATH 目录。',
       connectTitle: '连接当前服务',
       connectDesc: '创建并启用名为 weknora 的连接配置，然后使用邮箱和密码登录。如果已有同名配置，请更换名称，并同步修改 MCP 示例中的配置名。',
       verifyTitle: '验证连接',
@@ -5427,6 +5427,12 @@ export default {
     }
   },
   auth: {
+    loginMethod: '登录方式',
+    localLogin: '邮箱登录',
+    enterpriseLogin: '企业账号登录',
+    enterpriseUsername: '企业账号',
+    enterpriseUsernamePlaceholder: '输入企业账号',
+    enterpriseLoginFailed: '企业账号登录失败，请检查账号密码或联系管理员。',
     login: '登录',
     logout: '退出',
     oidcLogin: '使用 OIDC 登录',

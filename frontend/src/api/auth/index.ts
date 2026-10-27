@@ -226,6 +226,15 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
   }
 }
 
+export async function ldapLogin(data: { username: string; password: string }): Promise<LoginResponse> {
+  try {
+    const response = await post('/api/v1/auth/ldap/login', data)
+    return response as unknown as LoginResponse
+  } catch {
+    return { success: false }
+  }
+}
+
 /**
  * 获取 OIDC 登录跳转地址
  */
@@ -271,6 +280,7 @@ export interface AuthConfigResponse {
   success: boolean
   registration_mode: 'self_serve' | 'invite_register' | 'invite_only' | string
   complex_password_enabled: boolean
+  ldap_enabled?: boolean
 }
 
 export async function getAuthConfig(): Promise<AuthConfigResponse> {

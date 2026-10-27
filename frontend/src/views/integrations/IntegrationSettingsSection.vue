@@ -6,15 +6,6 @@
           <h2>{{ $t('agentEditor.im.title') }}</h2>
           <p class="section-description">
             {{ $t('agentEditor.im.description') }}
-            <a
-              :href="docsUrl('imIntegration')"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="doc-link"
-            >
-              {{ $t('agentEditor.im.docLink') }}
-              <t-icon name="link" class="link-icon" />
-            </a>
           </p>
         </div>
         <IMChannelPanel v-model:filter-agent-id="filterAgentId" />
@@ -62,7 +53,6 @@ import ChromeExtensionLanding from '@/views/integrations/ChromeExtensionLanding.
 import ClawSkillLanding from '@/views/integrations/ClawSkillLanding.vue'
 import CliIntegrationLanding from '@/views/integrations/CliIntegrationLanding.vue'
 import type { IntegrationTab } from '@/config/integrations'
-import { docsUrl } from '@/utils/docsUrl'
 
 const filterAgentId = ref('')
 
@@ -99,20 +89,4 @@ watch(
   .settings-section-header();
 }
 
-.doc-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: 6px;
-  color: var(--td-brand-color);
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
-.link-icon {
-  font-size: var(--app-text-md);
-}
 </style>

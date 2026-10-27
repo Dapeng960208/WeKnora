@@ -112,22 +112,8 @@
       <template v-if="currentEngine" #headerIcon>
         <span class="header-icon__text">{{ engineInitial(currentEngine.Name) }}</span>
       </template>
-      <!--
-        Subtitle slot: 引擎描述 + 内联文档链接。我们把"参考资料"从一个
-        独立 section 收回到头部副标题里 — 一个外链不值得占一整个 section。
-      -->
       <template v-if="currentEngine" #subtitle>
         <span>{{ getEngineDisplayDesc(currentEngine.Name, currentEngine.Description) }}</span>
-        <a
-          v-if="engineDocLink(currentEngine.Name)"
-          :href="engineDocLink(currentEngine.Name)"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="doc-link doc-link--inline"
-        >
-          {{ engineDocLabel(currentEngine.Name) }}
-          <t-icon name="link" class="link-icon" />
-        </a>
       </template>
       <!--
         Footer-left slot: 测试连接按钮 + 状态文案 — 主操作栏沿底边对齐，
@@ -431,16 +417,6 @@ const authStore = useAuthStore()
 
 const CONFIGURABLE_ENGINES = new Set(['mineru', 'mineru_cloud', 'paddleocr_vl', 'paddleocr_vl_cloud'])
 
-/** 各解析引擎的项目/官方文档地址 */
-const ENGINE_DOC_LINKS: Record<string, string> = {
-  weknoracloud: 'https://developers.weixin.qq.com/doc/aispeech/knowledge/atomic_capability/atomic_interface.html',
-  markitdown: 'https://github.com/microsoft/markitdown',
-  mineru: 'https://github.com/opendatalab/MinerU',
-  mineru_cloud: 'https://mineru.net/apiManage/docs',
-  paddleocr_vl: 'https://github.com/PaddlePaddle/PaddleOCR',
-  paddleocr_vl_cloud: 'https://aistudio.baidu.com/paddleocr',
-}
-
 /** 解析引擎配置默认值（与 DocReader/Python 侧一致） */
 const DEFAULT_PARSER_CONFIG: ParserEngineConfig = {
   docreader_addr: '',
@@ -528,14 +504,6 @@ const sortedEngines = computed(() => {
 
 function hasConfigFields(engineName: string): boolean {
   return CONFIGURABLE_ENGINES.has(engineName)
-}
-
-function engineDocLink(name: string): string | undefined {
-  return ENGINE_DOC_LINKS[name]
-}
-
-function engineDocLabel(_name: string): string {
-  return t('settings.parser.docs')
 }
 
 // 卡片徽章首字母。优先用本地化名称的首字符（覆盖如「内置/简易」等中文场景），
@@ -1094,38 +1062,6 @@ onMounted(loadAll)
 
   &.unavailable {
     color: var(--td-error-color);
-  }
-}
-
-// ---- 文档外链 ----
-.doc-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--app-text-md);
-  font-weight: 500;
-  color: var(--td-brand-color);
-  text-decoration: none;
-  transition: color var(--app-motion-fast) ease;
-
-  &:hover {
-    color: var(--td-brand-color-active);
-  }
-
-  .link-icon {
-    font-size: var(--app-text-base);
-  }
-
-  // 副标题里的 inline 文档链接：与描述文字平铺一行，体量等同小字
-  &--inline {
-    margin-left: 6px;
-    font-size: var(--app-text-sm);
-    font-weight: 500;
-    vertical-align: baseline;
-
-    .link-icon {
-      font-size: var(--app-text-sm);
-    }
   }
 }
 

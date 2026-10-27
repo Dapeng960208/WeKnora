@@ -544,7 +544,7 @@ export default {
       docsHint: '설치 안내 및 전체 명령어 참조',
       quickstart: '빠른 시작',
       installTitle: 'CLI 설치',
-      installDesc: 'Git과 Go 1.26+로 소스에서 빌드합니다. 아래 macOS / Linux 예제의 PATH 설정은 현재 터미널에만 적용됩니다. 계속 사용하려면 바이너리를 PATH에 포함된 디렉터리에 배치하세요.',
+      installDesc: '먼저 내부 채널에서 WeKnora 소스 코드를 받으세요. 빌드에는 Go 1.26+가 필요합니다. 아래 macOS / Linux 예제의 PATH 설정은 현재 터미널에만 적용됩니다. 계속 사용하려면 바이너리를 PATH에 포함된 디렉터리에 배치하세요.',
       connectTitle: '현재 서버에 연결',
       connectDesc: 'weknora 프로필을 생성하고 활성화한 후 이메일과 비밀번호로 로그인하세요. 같은 이름의 프로필이 있다면 다른 이름을 사용하고 MCP 예제의 프로필 이름도 변경하세요.',
       verifyTitle: '연결 확인',
@@ -5425,6 +5425,12 @@ export default {
     }
   },
   auth: {
+    loginMethod: '로그인 방식',
+    localLogin: '이메일 로그인',
+    enterpriseLogin: '기업 계정 로그인',
+    enterpriseUsername: '기업 사용자 이름',
+    enterpriseUsernamePlaceholder: '기업 사용자 이름 입력',
+    enterpriseLoginFailed: '기업 계정 로그인에 실패했습니다. 계정 정보를 확인하거나 관리자에게 문의하세요.',
     login: '로그인',
     logout: '로그아웃',
     oidcLogin: 'OIDC로 로그인',

@@ -96,30 +96,12 @@
     </div>
 
     <!-- Logo - Top Left -->
-    <a href="https://github.com/Tencent/WeKnora" target="_blank" class="header-logo" :title="$t('common.github')">
-      <img src="@/assets/img/weknora.png" alt="WeKnora" class="logo-image" />
-    </a>
+    <div class="header-logo">
+      <img src="@/assets/img/company-logo.png" alt="进迭时空 SpacemiT" class="logo-image" />
+    </div>
 
     <!-- Header Links - Top Right -->
     <div class="header-links">
-      <a href="https://weknora.weixin.qq.com" target="_blank" class="header-link" :title="$t('common.website')">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-          stroke-linecap="round">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="2" y1="12" x2="22" y2="12" />
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-        </svg>
-        <span class="link-text">{{ $t('common.website') }}</span>
-      </a>
-
-      <a href="https://github.com/Tencent/WeKnora" target="_blank" class="header-link" :title="$t('common.info')">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-          <path
-            d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-        </svg>
-        <span class="link-text">GitHub</span>
-      </a>
-
       <div class="language-switch">
         <button @click="toggleLanguageMenu" class="header-link" :title="currentLangOption?.label">
           <span class="lang-flag-icon">{{ currentLangOption?.flag }}</span>
@@ -199,9 +181,19 @@
           </div>
 
           <div class="form-content">
+            <div v-if="ldapEnabled" class="login-methods" role="group" :aria-label="$t('auth.loginMethod')">
+              <t-button type="button" :theme="ldapMode ? 'default' : 'primary'" :aria-pressed="!ldapMode" :disabled="loading"
+                @click="setLoginMethod(false)">{{ $t('auth.localLogin') }}</t-button>
+              <t-button type="button" :theme="ldapMode ? 'primary' : 'default'" :aria-pressed="ldapMode" :disabled="loading"
+                @click="setLoginMethod(true)">{{ $t('auth.enterpriseLogin') }}</t-button>
+            </div>
             <t-form ref="formRef" :data="formData" :rules="formRules" @submit="handleLogin" layout="vertical"
               label-align="top">
-              <t-form-item :label="$t('auth.email')" name="email">
+              <t-form-item v-if="ldapMode" :label="$t('auth.enterpriseUsername')" name="username">
+                <t-input v-model="formData.username" :placeholder="$t('auth.enterpriseUsernamePlaceholder')" type="text"
+                  autocomplete="username" size="large" :disabled="loading" />
+              </t-form-item>
+              <t-form-item v-else :label="$t('auth.email')" name="email">
                 <t-input v-model="formData.email" :placeholder="$t('auth.emailPlaceholder')" type="text"
                   autocomplete="email" size="large" :disabled="loading" />
               </t-form-item>
@@ -212,7 +204,7 @@
               </t-form-item>
 
               <t-button type="submit" theme="primary" size="large" block :loading="loading" class="submit-button">
-                {{ loading ? $t('auth.loggingIn') : $t('auth.login') }}
+                {{ loading ? $t('auth.loggingIn') : (ldapMode ? $t('auth.enterpriseLogin') : $t('auth.login')) }}
               </t-button>
 
               <div class="register-cta" v-if="registrationEnabled">
@@ -351,6 +343,7 @@ import 'swiper/css/effect-fade'
 import 'swiper/css/pagination'
 import {
   login,
+  ldapLogin,
   register,
   getOIDCAuthorizationURL,
   getOIDCConfig,
@@ -413,6 +406,8 @@ const oidcLoading = ref(false)
 const isRegisterMode = ref(false)
 const showLanguageMenu = ref(false)
 const oidcEnabled = ref(false)
+const ldapEnabled = ref(false)
+const ldapMode = ref(false)
 const oidcProviderName = ref('')
 // Wait for configuration before showing a registration entry.
 const registrationMode = ref('')
@@ -451,6 +446,7 @@ const currentLangOption = computed(() => languageOptions.find(l => l.value === c
 // Login form data
 const formData = reactive<{ [key: string]: any }>({
   email: '',
+  username: '',
   password: '',
 })
 
@@ -464,15 +460,21 @@ const registerData = reactive<{ [key: string]: any }>({
 
 // Login form validation rules
 const formRules = computed(() => ({
-  email: [
-    { required: true, message: t('auth.emailRequired'), type: 'error' },
-    { email: true, message: t('auth.emailInvalid'), type: 'error' }
-  ],
-  password: [
-    { required: true, message: t('auth.passwordRequired'), type: 'error' },
-    { min: 8, message: t('auth.passwordMinLength'), type: 'error' },
-    { max: 32, message: t('auth.passwordMaxLength'), type: 'error' }
-  ],
+  ...(ldapMode.value ? {
+    username: [{ required: true, message: t('auth.usernameRequired'), type: 'error' }],
+  } : {
+    email: [
+      { required: true, message: t('auth.emailRequired'), type: 'error' },
+      { email: true, message: t('auth.emailInvalid'), type: 'error' }
+    ],
+  }),
+  password: ldapMode.value
+    ? [{ required: true, message: t('auth.passwordRequired'), type: 'error' }]
+    : [
+      { required: true, message: t('auth.passwordRequired'), type: 'error' },
+      { min: 8, message: t('auth.passwordMinLength'), type: 'error' },
+      { max: 32, message: t('auth.passwordMaxLength'), type: 'error' }
+    ],
 }))
 
 // Register form validation rules
@@ -501,6 +503,12 @@ const registerRules = computed(() => ({
     }
   ]
 }))
+
+const setLoginMethod = (enterprise: boolean) => {
+  ldapMode.value = enterprise
+  formData.password = ''
+  nextTick(() => formRef.value?.clearValidate())
+}
 
 // Toggle login/register mode
 const toggleMode = () => {
@@ -615,6 +623,7 @@ const loadAuthConfig = async () => {
     const response = await getAuthConfig()
     registrationMode.value = response.success ? response.registration_mode : ''
     complexPasswordEnabled.value = response.complex_password_enabled
+    ldapEnabled.value = response.ldap_enabled === true
   } catch {
     registrationMode.value = ''
     complexPasswordEnabled.value = false
@@ -672,10 +681,9 @@ const handleLogin = async () => {
 
     loading.value = true
 
-    const response = await login({
-      email: formData.email,
-      password: formData.password,
-    })
+    const response = ldapMode.value
+      ? await ldapLogin({ username: formData.username, password: formData.password })
+      : await login({ email: formData.email, password: formData.password })
 
     if (response.success) {
       if (inviteToken.value) {
@@ -687,11 +695,15 @@ const handleLogin = async () => {
       await persistLoginResponse(response)
       notifyLoginSuccess(response, t, tm, formatRole, roleIcon)
     } else {
-      MessagePlugin.error(response.message || t('auth.loginError'))
+      MessagePlugin.error(ldapMode.value ? t('auth.enterpriseLoginFailed') : (response.message || t('auth.loginError')))
     }
   } catch (error: any) {
-    console.error('登录错误:', error)
-    MessagePlugin.error(error.message || t('auth.loginErrorRetry'))
+    if (ldapMode.value) {
+      MessagePlugin.error(t('auth.enterpriseLoginFailed'))
+    } else {
+      console.error('登录错误:', error)
+      MessagePlugin.error(error.message || t('auth.loginErrorRetry'))
+    }
   } finally {
     loading.value = false
   }
@@ -826,6 +838,14 @@ onMounted(async () => {
 </script>
 
 <style lang="less" scoped>
+.login-methods {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+
+  > * { flex: 1; }
+}
+
 .login-layout {
   display: flex;
   width: 100%;
@@ -1192,10 +1212,12 @@ onMounted(async () => {
   top: 32px;
   left: 50px;
   z-index: 100;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
 
   .logo-image {
-    width: 120px;
+    display: block;
+    width: 160px;
     height: auto;
   }
 }
@@ -1647,7 +1669,7 @@ onMounted(async () => {
     left: 40px;
 
     .logo-image {
-      width: 100px;
+      width: 140px;
     }
   }
 
@@ -1695,7 +1717,7 @@ onMounted(async () => {
     left: 30px;
 
     .logo-image {
-      width: 80px;
+      width: 120px;
     }
   }
 
@@ -1755,7 +1777,7 @@ onMounted(async () => {
     left: 20px;
 
     .logo-image {
-      width: 70px;
+      width: 100px;
     }
   }
 
@@ -1821,10 +1843,6 @@ html[theme-mode="dark"] {
 
   .connection-line {
     stroke: rgba(255, 255, 255, 0.25);
-  }
-
-  .header-logo .logo-image {
-    filter: invert(1) hue-rotate(180deg) brightness(1.1);
   }
 
   .header-link {

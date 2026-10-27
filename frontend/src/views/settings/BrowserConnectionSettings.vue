@@ -26,8 +26,6 @@
             </div>
             <p class="product-desc">
               {{ t('localBrowser.productDescription') }}
-              <a class="product-link" href="https://github.com/Tencent/BrowserSkill" target="_blank"
-                rel="noopener noreferrer">GitHub<t-icon name="jump" size="12px" /></a>
             </p>
           </div>
         </div>
@@ -80,24 +78,19 @@
               <strong>{{ t('localBrowser.usageStep1Title') }}</strong>
               <p>{{ t('localBrowser.extensionMinVersion', { version: MIN_EXTENSION_VERSION }) }}</p>
               <details class="install-guide">
-                <summary>{{ t('localBrowser.manualInstall') }}<t-icon name="chevron-down" size="12px" /></summary>
+                <summary>{{ t('localBrowser.installGuide') }}<t-icon name="chevron-down" size="12px" /></summary>
                 <div class="setup-help">
-                  <p>{{ t('localBrowser.installHint') }}</p>
                   <p>{{ t('localBrowser.usageStep1Text') }}</p>
-                  <t-button class="setup-action fallback-download" theme="default" variant="outline" size="small"
-                    :disabled="!status.extension_available || downloading" @click="download">
-                    <template #icon><t-icon name="download" size="13px" /></template>
-                    {{ t('localBrowser.downloadExtension') }}
-                  </t-button>
-                  <p v-if="!status.extension_available" class="package-hint">{{ t('localBrowser.packageUnavailable') }}</p>
                 </div>
               </details>
+              <p v-if="!status.extension_available" class="package-hint">{{ t('localBrowser.packageUnavailable') }}</p>
             </div>
             <div class="store-actions">
-              <a v-for="store in EXTENSION_STORES" :key="store.label" class="setup-action setup-main-action store-action"
-                :href="store.url" target="_blank" rel="noopener noreferrer">
-                {{ t(store.label) }}<t-icon name="jump" size="13px" />
-              </a>
+              <t-button class="setup-action fallback-download" theme="default" variant="outline" size="small"
+                :disabled="!status.extension_available || downloading" @click="download">
+                <template #icon><t-icon name="download" size="13px" /></template>
+                {{ t('localBrowser.downloadExtension') }}
+              </t-button>
             </div>
           </li>
           <li>
@@ -135,7 +128,7 @@
             <span class="usage-index">1</span>
             <div class="usage-copy">
               <strong>{{ t('localBrowser.usageStep1Title') }}</strong>
-              <p>{{ t('localBrowser.storeInstallHint') }}</p>
+              <p>{{ t('localBrowser.usageStep1Text') }}</p>
             </div>
           </li>
           <li>
@@ -185,10 +178,6 @@ const controller = new AbortController()
 let revision = 0
 let alive = true, timer: ReturnType<typeof setTimeout> | undefined, expiry: ReturnType<typeof setTimeout> | undefined, pairExpires = 0
 const MIN_EXTENSION_VERSION = '0.3.1'
-const EXTENSION_STORES = [
-  { label: 'localBrowser.storeInstall', url: 'https://chromewebstore.google.com/detail/hhcmgoofomhgciiibhipgmgkgnoenaoi' },
-  { label: 'localBrowser.edgeStoreInstall', url: 'https://microsoftedge.microsoft.com/addons/detail/browserskill/emacgiaaaiojkkpkddmmdfhmokgmnikg' },
-]
 const versionParts = (value: string) => value.replace(/^v/, '').split(/[.-]/).slice(0, 3).map((part) => Number.parseInt(part, 10) || 0)
 const extensionOutdated = computed(() => {
   const current = status.value.connected ? status.value.extension_version : ''

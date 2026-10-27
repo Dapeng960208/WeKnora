@@ -1,10 +1,5 @@
 import type { DeploymentCapabilityKey } from './deploymentCapabilities'
 
-export const CHROME_EXTENSION_URL =
-  'https://chromewebstore.google.com/detail/jpemjbopikggjlmikmclgbmkhhopjdgd?utm_source=item-share-cb'
-
-export const CLAWHUB_SKILL_URL = 'https://clawhub.ai/lyingbug/weknora'
-
 export type IntegrationTab = 'im' | 'embed' | 'api' | 'mcpserver' | 'cli' | 'chrome' | 'claw'
 
 export const INTEGRATION_TABS: IntegrationTab[] = ['im', 'embed', 'api', 'mcpserver', 'cli', 'chrome', 'claw']

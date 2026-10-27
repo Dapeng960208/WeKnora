@@ -29,7 +29,6 @@ export type ReferenceListItem = {
   fileName?: string
   url?: string
   domain?: string
-  faviconUrl?: string
   snippet?: string
   chunkId?: string
   chunkIds?: string[]
@@ -77,14 +76,6 @@ export function getDomainFromUrl(url: string): string {
   } catch {
     return url
   }
-}
-
-export function getFaviconUrl(urlOrDomain: string): string {
-  const domain = urlOrDomain.includes('://')
-    ? getDomainFromUrl(urlOrDomain)
-    : urlOrDomain.replace(/^www\./i, '')
-  if (!domain) return ''
-  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`
 }
 
 function truncateText(text: string, maxLen: number): string {
@@ -162,7 +153,6 @@ function buildWebItem(item: KnowledgeReferenceLike, index: number): ReferenceLis
     title,
     url,
     domain,
-    faviconUrl: getFaviconUrl(url),
     snippet: snippet || undefined,
     chunkId: item.id,
     content: item.content,

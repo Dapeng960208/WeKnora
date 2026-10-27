@@ -2661,6 +2661,12 @@ export default {
     passwordMismatch: 'Passwords do not match'
   },
   auth: {
+    loginMethod: 'Login method',
+    localLogin: 'Email login',
+    enterpriseLogin: 'Enterprise account login',
+    enterpriseUsername: 'Enterprise username',
+    enterpriseUsernamePlaceholder: 'Enter enterprise username',
+    enterpriseLoginFailed: 'Enterprise login failed. Check your credentials or contact your administrator.',
     login: 'Login',
     logout: 'Logout',
     oidcLogin: 'Sign in with OIDC',
@@ -7204,7 +7210,7 @@ export default {
       docsHint: 'Installation and complete command reference',
       quickstart: 'Quick start',
       installTitle: 'Install the CLI',
-      installDesc: 'Build from source with Git and Go 1.26+. This macOS / Linux example updates PATH for the current terminal only. For regular use, place the binary in a directory on PATH.',
+      installDesc: 'Obtain the WeKnora source through your internal channels first. Building requires Go 1.26+. This macOS / Linux example updates PATH for the current terminal only. For regular use, place the binary in a directory on PATH.',
       connectTitle: 'Connect to this server',
       connectDesc: 'Create and activate a profile named weknora, then sign in with your email and password. If that profile already exists, choose another name and update the MCP example to match.',
       verifyTitle: 'Verify the connection',

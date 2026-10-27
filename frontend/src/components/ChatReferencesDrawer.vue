@@ -136,14 +136,7 @@
                 </template>
                 <template v-else>
                   <div v-if="item.kind === 'web' && item.domain" class="reference-item__source">
-                    <img
-                      v-if="item.faviconUrl"
-                      class="reference-item__source-mark"
-                      :src="item.faviconUrl"
-                      alt=""
-                      loading="lazy"
-                      @error="onFaviconError"
-                    />
+                    <t-icon name="link" class="reference-item__source-mark" />
                     <span class="reference-item__domain">{{ item.domain }}</span>
                   </div>
                   <div v-else-if="item.kind === 'tool' && item.domain" class="reference-item__source">
@@ -334,11 +327,6 @@ function setItemRef(key: string, el: HTMLElement | null) {
     return
   }
   itemElements.set(key, el)
-}
-
-function onFaviconError(event: Event) {
-  const img = event.target as HTMLImageElement | null
-  if (img) img.style.display = 'none'
 }
 
 function hasMoreContent(item: ReferenceListItem) {

@@ -319,7 +319,7 @@ test('DingTalk configuration and sync failures remain localized after pruning', 
   const keys = [
     'connector.dingtalk', 'connectorDesc.dingtalk',
     'field.clientId', 'field.clientSecret', 'field.operatorId', 'field.operatorIdHint',
-    'prereqBarText_dingtalk', 'prereqOpenConsole_dingtalk',
+    'prereqBarText_dingtalk',
     ...[1, 2, 3].flatMap(step => [`prereqStep${step}Brief_dingtalk`, `prereqStep${step}Desc_dingtalk`]),
     'syncError.dingtalk_document_failed', 'syncError.dingtalk_resource_failed',
   ].map(key => `datasource.${key}`)

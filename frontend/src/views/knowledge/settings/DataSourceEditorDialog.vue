@@ -1542,35 +1542,11 @@ const drawerConfirmText = computed(() => {
                 t('datasource.prereqMemberDesc')) }}</span>
             </li>
           </ol>
-          <a
-            v-if="currentDef.permissionPageUrl"
-            :href="currentDef.permissionPageUrl"
-            target="_blank"
-            rel="noopener"
-            class="doc-link ds-setup-guide__link"
-          >
-            {{ t(`datasource.prereqOpenConsole_${form.type}`, t('datasource.prereqOpenConsole')) }}
-            <t-icon name="link" class="link-icon" />
-          </a>
         </div>
       </div>
 
       <section class="setting-drawer__section">
         <h4 class="setting-drawer__section-title">{{ t('datasource.sectionBasic') }}</h4>
-
-        <div v-if="currentDef?.docUrl" class="inline-alert">
-          <t-icon name="info-circle-filled" class="inline-alert__icon" />
-          <span class="inline-alert__text">{{ t('datasource.docHint') }}</span>
-          <a
-            :href="currentDef.docUrl"
-            target="_blank"
-            rel="noopener"
-            class="inline-alert__action doc-link"
-          >
-            {{ t('datasource.openDoc') }}
-            <t-icon name="link" class="link-icon" />
-          </a>
-        </div>
 
         <div class="form-item">
           <label class="form-label required">{{ t('datasource.nameLabel') }}</label>
@@ -1922,16 +1898,6 @@ const drawerConfirmText = computed(() => {
           <button type="button" class="ds-empty-retry" @click="loadResources">
             {{ t('datasource.retryLoadResources') }}
           </button>
-          <a
-            v-if="currentDef?.permissionDocUrl"
-            :href="currentDef.permissionDocUrl"
-            target="_blank"
-            rel="noopener"
-            class="doc-link"
-          >
-            {{ t('datasource.permissionDocLink') }}
-            <t-icon name="link" class="link-icon" />
-          </a>
         </div>
       </div>
       </template>
