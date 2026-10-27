@@ -181,14 +181,18 @@
           </div>
 
           <div class="form-content">
-            <p v-if="!authConfigLoading && !ldapEnabled" class="form-hint" role="alert">
-              {{ $t('auth.enterpriseUnavailable') }}
+            <p v-if="!authConfigLoading && !authConfigAvailable" class="form-hint" role="alert">
+              {{ $t('auth.loginErrorRetry') }}
             </p>
-            <t-form v-if="ldapEnabled" ref="formRef" :data="formData" :rules="formRules" @submit="handleLogin" layout="vertical"
+            <t-form v-if="authConfigAvailable" ref="formRef" :data="formData" :rules="formRules" @submit="handleLogin" layout="vertical"
               label-align="top">
-              <t-form-item :label="$t('auth.enterpriseUsername')" name="username">
+              <t-form-item v-if="ldapEnabled" :label="$t('auth.enterpriseUsername')" name="username">
                 <t-input v-model="formData.username" :placeholder="$t('auth.enterpriseUsernamePlaceholder')" type="text"
                   autocomplete="username" size="large" :disabled="loading" />
+              </t-form-item>
+              <t-form-item v-else :label="$t('auth.email')" name="email">
+                <t-input v-model="formData.email" :placeholder="$t('auth.emailPlaceholder')" type="text"
+                  autocomplete="email" size="large" :disabled="loading" />
               </t-form-item>
 
               <t-form-item :label="$t('auth.password')" name="password">
@@ -197,7 +201,7 @@
               </t-form-item>
 
               <t-button type="submit" theme="primary" size="large" block :loading="loading" class="submit-button">
-                {{ loading ? $t('auth.loggingIn') : $t('auth.enterpriseLogin') }}
+                {{ loading ? $t('auth.loggingIn') : (ldapEnabled ? $t('auth.enterpriseLogin') : $t('auth.login')) }}
               </t-button>
             </t-form>
 
@@ -335,6 +339,7 @@ import 'swiper/css'
 import 'swiper/css/effect-fade'
 import 'swiper/css/pagination'
 import {
+  login,
   ldapLogin,
   register,
   getOIDCAuthorizationURL,
@@ -400,6 +405,7 @@ const showLanguageMenu = ref(false)
 const oidcEnabled = ref(false)
 const ldapEnabled = ref(false)
 const authConfigLoading = ref(true)
+const authConfigAvailable = ref(false)
 const oidcProviderName = ref('')
 // Wait for configuration before showing a registration entry.
 const registrationMode = ref('')
@@ -437,6 +443,7 @@ const currentLangOption = computed(() => languageOptions.find(l => l.value === c
 
 // Login form data
 const formData = reactive<{ [key: string]: any }>({
+  email: '',
   username: '',
   password: '',
 })
@@ -451,8 +458,21 @@ const registerData = reactive<{ [key: string]: any }>({
 
 // Login form validation rules
 const formRules = computed(() => ({
-  username: [{ required: true, message: t('auth.usernameRequired'), type: 'error' }],
-  password: [{ required: true, message: t('auth.passwordRequired'), type: 'error' }],
+  ...(ldapEnabled.value ? {
+    username: [{ required: true, message: t('auth.usernameRequired'), type: 'error' }],
+  } : {
+    email: [
+      { required: true, message: t('auth.emailRequired'), type: 'error' },
+      { email: true, message: t('auth.emailInvalid'), type: 'error' }
+    ],
+  }),
+  password: ldapEnabled.value
+    ? [{ required: true, message: t('auth.passwordRequired'), type: 'error' }]
+    : [
+      { required: true, message: t('auth.passwordRequired'), type: 'error' },
+      { min: 8, message: t('auth.passwordMinLength'), type: 'error' },
+      { max: 32, message: t('auth.passwordMaxLength'), type: 'error' }
+    ],
 }))
 
 // Register form validation rules
@@ -595,6 +615,7 @@ const loadAuthConfig = async () => {
     const response = await getAuthConfig()
     registrationMode.value = response.success ? response.registration_mode : ''
     complexPasswordEnabled.value = response.complex_password_enabled
+    authConfigAvailable.value = response.success === true && typeof response.ldap_enabled === 'boolean'
     ldapEnabled.value = response.success === true && response.ldap_enabled === true
   } catch {
     registrationMode.value = ''
@@ -649,14 +670,16 @@ const acceptAndEnter = async (token: string) => {
 
 // Handle login
 const handleLogin = async () => {
-  if (!ldapEnabled.value) return
+  if (!authConfigAvailable.value) return
   try {
     const valid = await formRef.value?.validate()
     if (valid !== true) return
 
     loading.value = true
 
-    const response = await ldapLogin({ username: formData.username, password: formData.password })
+    const response = ldapEnabled.value
+      ? await ldapLogin({ username: formData.username, password: formData.password })
+      : await login({ email: formData.email, password: formData.password })
 
     if (response.success) {
       if (inviteToken.value) {
@@ -668,10 +691,14 @@ const handleLogin = async () => {
       await persistLoginResponse(response)
       notifyLoginSuccess(response, t, tm, formatRole, roleIcon)
     } else {
-      MessagePlugin.error(t('auth.enterpriseLoginFailed'))
+      MessagePlugin.error(ldapEnabled.value ? t('auth.enterpriseLoginFailed') : (response.message || t('auth.loginError')))
     }
-  } catch {
-    MessagePlugin.error(t('auth.enterpriseLoginFailed'))
+  } catch (error: any) {
+    if (ldapEnabled.value) {
+      MessagePlugin.error(t('auth.enterpriseLoginFailed'))
+    } else {
+      MessagePlugin.error(error.message || t('auth.loginErrorRetry'))
+    }
   } finally {
     loading.value = false
   }

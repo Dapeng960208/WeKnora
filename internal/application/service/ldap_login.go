@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	apprepo "github.com/Tencent/WeKnora/internal/application/repository"
+	"github.com/Tencent/WeKnora/internal/auth/ldapauth"
 	"github.com/Tencent/WeKnora/internal/types"
 )
 
@@ -20,6 +21,9 @@ type ldapIdentityRepository interface {
 // LoginWithLDAP receives an identity only after the LDAP password, account
 // status and trusted unique email have been validated by the server.
 func (s *userService) LoginWithLDAP(ctx context.Context, identity *types.LDAPIdentity, provisioning types.TenantProvisioningMode) (*types.LoginResponse, error) {
+	if !ldapauth.IsEnabled() {
+		return nil, errors.New("LDAP authentication is disabled")
+	}
 	if identity == nil || identity.DirectoryID == "" || identity.ID == "" || identity.Username == "" {
 		return nil, errors.New("invalid LDAP identity")
 	}

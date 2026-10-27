@@ -66,6 +66,7 @@ type ldapTestTokenRepo struct{ interfaces.AuthTokenRepository }
 func (ldapTestTokenRepo) CreateToken(context.Context, *types.AuthToken) error { return nil }
 
 func TestLDAPFirstLoginTenantless(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "true")
 	t.Setenv("LDAP_ADMIN", "")
 	repo := &ldapTestUserRepo{}
 	svc := &userService{userRepo: repo, tokenRepo: ldapTestTokenRepo{}}
@@ -82,6 +83,7 @@ func TestLDAPFirstLoginTenantless(t *testing.T) {
 }
 
 func TestLDAPExistingAccountMustBeApproved(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "true")
 	t.Setenv("LDAP_ADMIN", "")
 	t.Setenv("LDAP_EXISTING_USER_ALLOWLIST", "")
 	repo := &ldapTestUserRepo{user: &types.User{ID: "existing", Email: "admin@example.com", IsActive: true, IsSystemAdmin: true, TenantID: 7}}
@@ -93,6 +95,7 @@ func TestLDAPExistingAccountMustBeApproved(t *testing.T) {
 }
 
 func TestLDAPAdminFirstLoginRegistersWithoutSpace(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "true")
 	t.Setenv("LDAP_ADMIN", "new@example.com")
 	repo := &ldapTestUserRepo{}
 	svc := &userService{userRepo: repo, tokenRepo: ldapTestTokenRepo{}}
@@ -106,6 +109,7 @@ func TestLDAPAdminFirstLoginRegistersWithoutSpace(t *testing.T) {
 }
 
 func TestLDAPAdminExplicitlyApprovesExistingUser(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "true")
 	t.Setenv("LDAP_EXISTING_USER_ALLOWLIST", "")
 	t.Setenv("LDAP_ADMIN", " ADMIN@example.com ")
 	repo := &ldapTestUserRepo{user: &types.User{ID: "existing", Email: "admin@example.com", PasswordHash: "original", IsActive: true}}
@@ -120,6 +124,7 @@ func TestLDAPAdminExplicitlyApprovesExistingUser(t *testing.T) {
 }
 
 func TestLDAPAdminDoesNotApproveDifferentUser(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "true")
 	t.Setenv("LDAP_EXISTING_USER_ALLOWLIST", "")
 	t.Setenv("LDAP_ADMIN", "admin@example.com")
 	repo := &ldapTestUserRepo{user: &types.User{ID: "other", Email: "other@example.com", IsActive: true}}
@@ -127,5 +132,20 @@ func TestLDAPAdminDoesNotApproveDifferentUser(t *testing.T) {
 	_, err := svc.LoginWithLDAP(context.Background(), &types.LDAPIdentity{DirectoryID: "company", ID: "other-guid", Username: "other", Email: "other@example.com"}, types.TenantProvisioningTenantless)
 	if !errors.Is(err, apprepo.ErrLDAPIdentityConflict) || repo.user.IsSystemAdmin {
 		t.Fatalf("other account was approved: %v", err)
+	}
+}
+
+func TestLDAPAdminHasNoEffectWhenLDAPDisabled(t *testing.T) {
+	for _, enabled := range []string{"", "false"} {
+		t.Run("enabled="+enabled, func(t *testing.T) {
+			t.Setenv("LDAP_ENABLED", enabled)
+			t.Setenv("LDAP_ADMIN", "admin@example.com")
+			repo := &ldapTestUserRepo{user: &types.User{ID: "existing", Email: "admin@example.com", IsActive: true}}
+			svc := &userService{userRepo: repo, tokenRepo: ldapTestTokenRepo{}}
+			result, err := svc.LoginWithLDAP(context.Background(), &types.LDAPIdentity{DirectoryID: "company", ID: "guid", Username: "admin", Email: "admin@example.com"}, types.TenantProvisioningTenantless)
+			if err == nil || result != nil || repo.bound || repo.user.IsSystemAdmin {
+				t.Fatalf("disabled LDAP accepted or changed account: result=%v, error=%v, bound=%v, admin=%v", result, err, repo.bound, repo.user.IsSystemAdmin)
+			}
+		})
 	}
 }
