@@ -1125,6 +1125,16 @@ func (s *userService) generateTokensForTenant(
 	user *types.User,
 	activeTenantID uint64,
 ) (accessToken, refreshToken string, err error) {
+	// JWTs issued within the same second must not be byte-identical: otherwise
+	// revoking one database record can accidentally revoke or revive another.
+	accessID, err := uuid.NewRandom()
+	if err != nil {
+		return "", "", fmt.Errorf("generate access token ID: %w", err)
+	}
+	refreshID, err := uuid.NewRandom()
+	if err != nil {
+		return "", "", fmt.Errorf("generate refresh token ID: %w", err)
+	}
 	// Generate access token (expires in 24 hours)
 	accessClaims := jwt.MapClaims{
 		"user_id":   user.ID,
@@ -1133,6 +1143,7 @@ func (s *userService) generateTokensForTenant(
 		"exp":       time.Now().Add(24 * time.Hour).Unix(),
 		"iat":       time.Now().Unix(),
 		"type":      "access",
+		"jti":       accessID.String(),
 	}
 
 	accessTokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
@@ -1147,6 +1158,7 @@ func (s *userService) generateTokensForTenant(
 		"exp":     time.Now().Add(7 * 24 * time.Hour).Unix(),
 		"iat":     time.Now().Unix(),
 		"type":    "refresh",
+		"jti":     refreshID.String(),
 	}
 
 	refreshTokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
@@ -1157,7 +1169,7 @@ func (s *userService) generateTokensForTenant(
 
 	// Store tokens in database
 	accessTokenRecord := &types.AuthToken{
-		ID:        uuid.New().String(),
+		ID:        accessID.String(),
 		UserID:    user.ID,
 		Token:     accessToken,
 		TokenType: "access_token",
@@ -1167,7 +1179,7 @@ func (s *userService) generateTokensForTenant(
 	}
 
 	refreshTokenRecord := &types.AuthToken{
-		ID:        uuid.New().String(),
+		ID:        refreshID.String(),
 		UserID:    user.ID,
 		Token:     refreshToken,
 		TokenType: "refresh_token",
