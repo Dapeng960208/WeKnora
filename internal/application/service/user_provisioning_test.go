@@ -13,6 +13,7 @@ type provisioningUserRepo struct {
 	created       *types.User
 	updatedTenant uint64
 	fullUpdates   int
+	clearedPreference *uint64
 }
 
 func (r *provisioningUserRepo) GetUserByEmail(context.Context, string) (*types.User, error) {
@@ -35,9 +36,13 @@ func (r *provisioningUserRepo) UpdateUser(_ context.Context, user *types.User) e
 	return nil
 }
 
-func (r *provisioningUserRepo) RepairLoginTenant(_ context.Context, _ string, _, desiredTenant, _ *uint64) error {
+func (r *provisioningUserRepo) RepairLoginTenant(_ context.Context, _ string, _, desiredTenant, stalePreference *uint64) error {
 	if desiredTenant != nil {
 		r.updatedTenant = *desiredTenant
+	}
+	if stalePreference != nil {
+		value := *stalePreference
+		r.clearedPreference = &value
 	}
 	return nil
 }
@@ -192,6 +197,16 @@ func TestHomeOrFirstMembershipTenantKeepsValidHome(t *testing.T) {
 	}
 	if user.TenantID != 7 {
 		t.Fatalf("TenantID mutated to %d, want 7", user.TenantID)
+	}
+}
+
+func TestClearStaleHomeDoesNotClearUnobservedPreference(t *testing.T) {
+	repo := &provisioningUserRepo{}
+	svc := &userService{userRepo: repo}
+	user := &types.User{ID: "alice", TenantID: 7}
+	svc.clearStaleHomeTenant(context.Background(), user)
+	if repo.clearedPreference != nil {
+		t.Fatal("must not clear a preference not observed by this login")
 	}
 }
 
