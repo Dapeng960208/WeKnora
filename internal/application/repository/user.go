@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -20,6 +21,8 @@ var (
 	ErrUserNotFound = errors.New("user not found")
 	// ErrUserAlreadyExists indicates a duplicate user account.
 	ErrUserAlreadyExists = errors.New("user already exists")
+	// ErrUserTenantChanged prevents a stale login repair from replacing a newer home tenant.
+	ErrUserTenantChanged = errors.New("user home tenant changed during login")
 	// ErrTokenNotFound indicates that the requested token does not exist.
 	ErrTokenNotFound = errors.New("token not found")
 	// ErrCannotRevokeSelf prevents administrators from revoking their own role.
@@ -139,6 +142,62 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *types.User) error
 		})
 	}
 	return r.db.WithContext(ctx).Omit("is_active").Save(user).Error
+}
+
+// RepairLoginTenant reads the current preferences under a row lock so login
+// repair never writes stale permissions, profile fields, or unrelated preferences.
+func (r *userRepository) RepairLoginTenant(ctx context.Context, userID string, expectedTenant, desiredTenant, stalePreference *uint64) error {
+	if (expectedTenant == nil) != (desiredTenant == nil) {
+		return errors.New("invalid login tenant repair")
+	}
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var current struct {
+			TenantID    *uint64 `gorm:"column:tenant_id"`
+			Preferences []byte  `gorm:"column:preferences"`
+		}
+		if err := tx.Table("users").Clauses(clause.Locking{Strength: "UPDATE"}).Select("tenant_id", "preferences").Where("id = ?", userID).Take(&current).Error; err != nil {
+			return err
+		}
+		updates := map[string]interface{}{}
+		if expectedTenant != nil {
+			var currentTenant uint64
+			if current.TenantID != nil {
+				currentTenant = *current.TenantID
+			}
+			if currentTenant != *expectedTenant {
+				return ErrUserTenantChanged
+			}
+			if *desiredTenant == 0 {
+				updates["tenant_id"] = nil
+			} else {
+				updates["tenant_id"] = *desiredTenant
+			}
+		}
+		if stalePreference != nil {
+			var preferences map[string]json.RawMessage
+			if err := json.Unmarshal(current.Preferences, &preferences); err != nil {
+				return err
+			}
+			if raw, ok := preferences["last_active_tenant_id"]; ok && string(raw) != "null" {
+				var currentPreference uint64
+				if err := json.Unmarshal(raw, &currentPreference); err != nil {
+					return err
+				}
+				if currentPreference == *stalePreference {
+					delete(preferences, "last_active_tenant_id")
+					encoded, err := json.Marshal(preferences)
+					if err != nil {
+						return err
+					}
+					updates["preferences"] = string(encoded)
+				}
+			}
+		}
+		if len(updates) == 0 {
+			return nil
+		}
+		return tx.Model(&types.User{}).Where("id = ?", userID).Updates(updates).Error
+	})
 }
 
 // DeleteUser deletes a user

@@ -1045,7 +1045,8 @@ func (s *userService) clearStaleHomeTenant(ctx context.Context, user *types.User
 	if s.userRepo == nil {
 		return
 	}
-	if err := s.userRepo.UpdateUser(ctx, user); err != nil {
+	clearedHome := uint64(0)
+	if err := s.userRepo.RepairLoginTenant(ctx, user.ID, &staleHome, &clearedHome, &staleHome); err != nil {
 		logger.Warnf(ctx,
 			"clearStaleHomeTenant: failed to persist cleared home for user %s (was tenant %d): %v",
 			user.ID, staleHome, err)
@@ -1081,7 +1082,8 @@ func (s *userService) resolveFirstMembershipTenant(ctx context.Context, user *ty
 
 		user.TenantID = member.TenantID
 		if s.userRepo != nil {
-			if err := s.userRepo.UpdateUser(ctx, user); err != nil {
+			emptyHome := uint64(0)
+			if err := s.userRepo.RepairLoginTenant(ctx, user.ID, &emptyHome, &member.TenantID, nil); err != nil {
 				logger.Warnf(ctx, "resolveLoginTenantID: failed to persist tenant %d for tenantless user %s: %v",
 					member.TenantID, user.ID, err)
 				user.TenantID = 0
@@ -1100,8 +1102,12 @@ func (s *userService) clearLastActiveTenantPreference(ctx context.Context, user 
 	if user == nil {
 		return
 	}
+	stalePreference := user.Preferences.LastActiveTenantID
 	user.Preferences.LastActiveTenantID = nil
-	if err := s.userRepo.UpdateUser(ctx, user); err != nil {
+	if stalePreference == nil || s.userRepo == nil {
+		return
+	}
+	if err := s.userRepo.RepairLoginTenant(ctx, user.ID, nil, nil, stalePreference); err != nil {
 		logger.Warnf(ctx,
 			"clearLastActiveTenantPreference: failed to persist cleared preference for user %s: %v",
 			user.ID, err)

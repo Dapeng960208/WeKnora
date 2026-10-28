@@ -37,6 +37,27 @@ func (r *switchTenantUserRepo) UpdateUser(_ context.Context, user *types.User) e
 	return nil
 }
 
+func (r *switchTenantUserRepo) RepairLoginTenant(_ context.Context, id string, expectedTenant, desiredTenant, stalePreference *uint64) error {
+	if r.failUpdates {
+		return errors.New("simulated update failure")
+	}
+	user, ok := r.users[id]
+	if !ok {
+		return errors.New("user not found")
+	}
+	if expectedTenant != nil && desiredTenant != nil {
+		if user.TenantID != *expectedTenant {
+			return errors.New("tenant changed")
+		}
+		user.TenantID = *desiredTenant
+	}
+	if stalePreference != nil && user.Preferences.LastActiveTenantID != nil && *user.Preferences.LastActiveTenantID == *stalePreference {
+		user.Preferences.LastActiveTenantID = nil
+	}
+	r.users[id] = user
+	return nil
+}
+
 type countingAuthTokenRepo struct {
 	stubAuthTokenRepo
 	createCalls int

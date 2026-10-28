@@ -45,7 +45,9 @@ func (s *userService) LoginWithLDAP(ctx context.Context, identity *types.LDAPIde
 	key := hex.EncodeToString(hash[:])
 	adminEmail := strings.TrimSpace(os.Getenv("LDAP_ADMIN"))
 	bootstrapAdmin := adminEmail != "" && strings.EqualFold(email, adminEmail)
-	user, err := repo.BindLDAPIdentity(ctx, key, email, "", bootstrapAdmin || ldapExistingUserAllowed(email), bootstrapAdmin)
+	// The handler only supplies identities after directory authentication and
+	// trusted-email uniqueness checks; the repository still rejects conflicts.
+	user, err := repo.BindLDAPIdentity(ctx, key, email, "", true, bootstrapAdmin)
 	if errors.Is(err, apprepo.ErrUserNotFound) {
 		// Existing registration policy chooses tenantless or a personal space.
 		// The generated password is unknown to the directory user.
@@ -77,13 +79,4 @@ func (s *userService) LoginWithLDAP(ctx context.Context, identity *types.LDAPIde
 		ActiveTenant: tenant, Memberships: s.buildMembershipsForUser(ctx, user, tenant),
 		Token: accessToken, RefreshToken: refreshToken,
 	}, nil
-}
-
-func ldapExistingUserAllowed(email string) bool {
-	for _, allowed := range strings.Split(os.Getenv("LDAP_EXISTING_USER_ALLOWLIST"), ",") {
-		if allowed = strings.TrimSpace(allowed); allowed != "" && strings.EqualFold(email, allowed) {
-			return true
-		}
-	}
-	return false
 }

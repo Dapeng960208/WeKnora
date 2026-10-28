@@ -108,6 +108,9 @@ func (s *stubUserRepoForAuth) UpdateUser(context.Context, *types.User) error {
 	s.updateCalls++
 	return nil
 }
+func (s *stubUserRepoForAuth) RepairLoginTenant(context.Context, string, *uint64, *uint64, *uint64) error {
+	return nil
+}
 func (s *stubUserRepoForAuth) DeleteUser(context.Context, string) error { return nil }
 func (s *stubUserRepoForAuth) ListUsers(context.Context, int, int) ([]*types.User, error) {
 	return nil, nil

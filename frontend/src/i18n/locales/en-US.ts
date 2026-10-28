@@ -7635,7 +7635,7 @@ export default {
   },
   userProfile: {
     title: 'User Profile',
-    description: 'View your account info (user ID, username, email, registration time) and change your password.',
+    description: 'View your account info (user ID, username, email, registration time).',
     changePassword: {
       label: 'Change password',
       description: 'Verify your current password, then set a new one. All signed-in sessions will be revoked and you will need to sign in again.',

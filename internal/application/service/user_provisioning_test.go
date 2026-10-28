@@ -12,6 +12,7 @@ type provisioningUserRepo struct {
 	interfaces.UserRepository
 	created       *types.User
 	updatedTenant uint64
+	fullUpdates   int
 }
 
 func (r *provisioningUserRepo) GetUserByEmail(context.Context, string) (*types.User, error) {
@@ -29,7 +30,15 @@ func (r *provisioningUserRepo) CreateUser(_ context.Context, user *types.User) e
 }
 
 func (r *provisioningUserRepo) UpdateUser(_ context.Context, user *types.User) error {
+	r.fullUpdates++
 	r.updatedTenant = user.TenantID
+	return nil
+}
+
+func (r *provisioningUserRepo) RepairLoginTenant(_ context.Context, _ string, _, desiredTenant, _ *uint64) error {
+	if desiredTenant != nil {
+		r.updatedTenant = *desiredTenant
+	}
 	return nil
 }
 
@@ -92,6 +101,9 @@ func TestResolveLoginTenantIDRepairsTenantlessUserWithMembership(t *testing.T) {
 	}
 	if repo.updatedTenant != 42 || user.TenantID != 42 {
 		t.Fatalf("repair was not persisted: repo=%d user=%d", repo.updatedTenant, user.TenantID)
+	}
+	if repo.fullUpdates != 0 {
+		t.Fatal("tenant repair must not save stale permissions or profile fields")
 	}
 }
 
@@ -160,6 +172,9 @@ func TestHomeOrFirstMembershipTenantClearsStaleHome(t *testing.T) {
 	}
 	if repo.updatedTenant != 42 {
 		t.Fatalf("persisted tenant = %d, want 42", repo.updatedTenant)
+	}
+	if repo.fullUpdates != 0 {
+		t.Fatal("stale home repair must not save stale permissions or profile fields")
 	}
 }
 

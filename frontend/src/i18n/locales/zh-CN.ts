@@ -502,7 +502,7 @@ export default {
   },
   userProfile: {
     title: '用户信息',
-    description: '查看您的账户基础信息（用户 ID、用户名、邮箱、注册时间），并可修改登录密码',
+    description: '查看您的账户基础信息（用户 ID、用户名、邮箱、注册时间）',
     changePassword: {
       label: '修改密码',
       description: '使用当前密码验证后设置新密码。修改成功后所有设备上的登录状态将失效，需要重新登录。',

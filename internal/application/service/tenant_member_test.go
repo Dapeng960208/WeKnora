@@ -292,6 +292,9 @@ func (r *cleanupUserRepo) UpdateUser(_ context.Context, user *types.User) error 
 	r.users[user.ID] = &cp
 	return nil
 }
+func (r *cleanupUserRepo) RepairLoginTenant(context.Context, string, *uint64, *uint64, *uint64) error {
+	return nil
+}
 func (r *cleanupUserRepo) DeleteUser(context.Context, string) error { return nil }
 func (r *cleanupUserRepo) ListUsers(context.Context, int, int) ([]*types.User, error) {
 	return nil, nil

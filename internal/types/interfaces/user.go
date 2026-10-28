@@ -131,6 +131,9 @@ type UserRepository interface {
 	GetUserByTenantID(ctx context.Context, tenantID uint64) (*types.User, error)
 	// UpdateUser updates user data without changing account status; use SetUserActive for that.
 	UpdateUser(ctx context.Context, user *types.User) error
+	// RepairLoginTenant conditionally updates only a stale home tenant or preference.
+	// A nil tenant pointer leaves the home unchanged; a nil preference pointer leaves it unchanged.
+	RepairLoginTenant(ctx context.Context, userID string, expectedTenant, desiredTenant, stalePreference *uint64) error
 	// SetUserActive atomically changes status and revokes sessions on disable,
 	// preserving at least one active system administrator.
 	SetUserActive(ctx context.Context, userID, actorID string, active bool) (*types.User, error)
