@@ -1039,14 +1039,16 @@ func (s *userService) clearStaleHomeTenant(ctx context.Context, user *types.User
 	}
 	staleHome := user.TenantID
 	user.TenantID = 0
+	var stalePreference *uint64
 	if user.Preferences.LastActiveTenantID != nil && *user.Preferences.LastActiveTenantID == staleHome {
+		stalePreference = &staleHome
 		user.Preferences.LastActiveTenantID = nil
 	}
 	if s.userRepo == nil {
 		return
 	}
 	clearedHome := uint64(0)
-	if err := s.userRepo.RepairLoginTenant(ctx, user.ID, &staleHome, &clearedHome, &staleHome); err != nil {
+	if err := s.userRepo.RepairLoginTenant(ctx, user.ID, &staleHome, &clearedHome, stalePreference); err != nil {
 		logger.Warnf(ctx,
 			"clearStaleHomeTenant: failed to persist cleared home for user %s (was tenant %d): %v",
 			user.ID, staleHome, err)
