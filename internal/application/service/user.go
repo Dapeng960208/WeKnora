@@ -23,6 +23,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	apprepo "github.com/Tencent/WeKnora/internal/application/repository"
+	"github.com/Tencent/WeKnora/internal/auth/ldapauth"
 	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/types"
@@ -68,6 +69,9 @@ var (
 	// one so callers can reject no-op rotations that would still revoke
 	// every session.
 	ErrSamePassword = errors.New("new password must differ from current password")
+
+	// ErrPasswordChangeDisabled prevents local password changes when LDAP is enabled.
+	ErrPasswordChangeDisabled = errors.New("password change is disabled while LDAP authentication is enabled")
 )
 
 // Machine-readable change-password failure reasons for HTTP details fields.
@@ -728,6 +732,9 @@ func (s *userService) DeleteUser(ctx context.Context, id string) error {
 // registration / admin reset allow. On success every outstanding session
 // is revoked so a stolen token cannot survive the rotation.
 func (s *userService) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
+	if ldapauth.IsEnabled() {
+		return ErrPasswordChangeDisabled
+	}
 	user, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
 		return err
@@ -774,6 +781,9 @@ func (s *userService) ChangePassword(ctx context.Context, userID, oldPassword, n
 // admin HTTP boundary; this service owns the security-critical persistence and
 // session invalidation so no caller can accidentally update only one of them.
 func (s *userService) AdminResetPassword(ctx context.Context, userID, newPassword string) error {
+	if ldapauth.IsEnabled() {
+		return ErrPasswordChangeDisabled
+	}
 	if err := ValidatePasswordPolicy(newPassword, s.complexPasswordEnabled(ctx)); err != nil {
 		return err
 	}

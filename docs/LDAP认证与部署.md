@@ -8,7 +8,7 @@
 - 邮箱唯一性查询依赖目录的属性相等匹配规则。管理员必须确认邮箱属性使用不区分大小写的匹配（例如 `caseIgnoreMatch`），并在整个搜索范围内实施不区分大小写的唯一性约束；使用 `caseExactMatch` 的目录可能漏掉仅大小写不同的重复邮箱，不能在未补齐这一保障时启用邮箱信任。
 - 查询账号必须完整看到所有配置 Base DN 内参与登录及邮箱查重的对象，并能读取身份、邮箱和状态属性；ACL 隐藏的重复项无法由应用发现。上线前验证目录权限和唯一性约束。
 - 使用稳定、唯一的目录标识 `LDAP_DIRECTORY_ID`。不要把现有标识换给其他目录，也不要在无迁移方案时更改它。默认使用 AD `objectGUID` 作为身份标识；账号改名或移动 OU 时应保留该对象身份。删除并重建 AD 对象不是同一身份。
-- 只授予查询账号读取目标 OU 中所需属性的权限。保证禁用账号不会通过配置的筛选规则；应用也会检查 AD 的账号禁用状态。目录用户禁用后，新的 LDAP 登录会被拒绝；已有 WeKnora 会话不会自动联动撤销，仍可能继续有效及刷新。需要立即终止访问时，应撤销该用户全部 WeKnora 会话并确认生效。现有 `POST /api/v1/auth/logout` 由用户本人调用，可撤销该用户的全部 access/refresh token；管理员可通过 `POST /api/v1/system/admin/users/reset-password` 重置该用户本地密码并撤销所有会话，但此操作会改变本地登录凭据，且不能重置自己的账号。请按现有管理员权限与密码策略操作并妥善保管新密码。单独标记用户不活跃不能代替会话撤销。
+- 只授予查询账号读取目标 OU 中所需属性的权限。保证禁用账号不会通过配置的筛选规则；应用也会检查 AD 的账号禁用状态。目录用户禁用后，新的 LDAP 登录会被拒绝；已有 WeKnora 会话不会自动联动撤销，仍可能继续有效及刷新。需要立即终止访问时，应撤销该用户全部 WeKnora 会话并确认生效。用户本人调用 `POST /api/v1/auth/logout` 可撤销其全部 access/refresh token。系统管理员也可通过用户管理停用该用户（`POST /api/v1/system/admin/users/status`，`is_active=false`）；停用活动用户时，系统在同一事务中撤销其会话，并阻止后续登录。此接口不允许停用自己或最后一位活跃的系统管理员。不要仅通过直接修改数据库中的用户状态来代替会话撤销。LDAP 启用时，管理员重置本地密码的接口不可用于撤销会话。
 - 检查部署中系统设置的实际值：数据库中的认证设置可能覆盖环境变量。目标部署应使用 `tenantless` 默认空间策略，并关闭普通用户自助创建空间；通过管理员邀请授予成员权限。除下述明确配置的管理员初始化外，LDAP 登录不会修改已有用户资料、系统管理员权限或空间角色。
 - 使用 HTTPS 保护浏览器到 WeKnora 的登录链路；LDAP 连接必须使用 StartTLS 或 LDAPS、验证服务器证书链和主机名。证书中的名称应覆盖 LDAP URL 的主机名。
 - 登录限流按客户端 IP 在每个应用进程内执行（30 次/分钟），不跨副本共享。配置 `WEKNORA_TRUSTED_PROXIES` 为实际受信任代理的 IP/CIDR，确保边缘代理覆盖客户端提供的 `X-Forwarded-For`，限制客户端直接访问后端；多副本部署还应在边缘统一限流。不要把任意私网客户端当作可信代理。
@@ -43,6 +43,8 @@ WEKNORA_TENANT_SELF_SERVICE_CREATION_ENABLED=false
 ```
 
 `LDAP_ENABLED` 默认关闭；`LDAP_URL` 使用 `ldap://` 时必须启用 StartTLS，也可使用 `ldaps://`。`LDAP_CA_FILE` 为 PEM CA 证书路径，追加到系统信任根；没有自定义 CA 时可省略。使用正确的证书而不是关闭验证。超时使用 Go duration 格式。密码文件与 `LDAP_BIND_PASSWORD` 安全环境变量二选一；优先使用受限文件，切勿把密码写入源码、镜像、仓库、示例文件或日志。环境变量可能被容器管理权限持有者读取。
+
+启用 LDAP 时，所有用户的 WeKnora 本地密码自助修改和系统管理员重置本地密码均被禁止：页面隐藏相应入口，两个后端接口也会拒绝请求。企业目录密码仍由目录管理方按照公司流程维护；此开关不会修改或重置目录密码，也不会修改已有本地密码。关闭 LDAP 后，原有的本地密码修改和管理员重置功能恢复。LDAP、OIDC 等首次登录时创建用户所需的初始密码处理不受该限制。
 
 `LDAP_ID_ATTRIBUTE` 默认为 `objectGUID`，其他 LDAP 可使用例如 `entryUUID` 的唯一、不可变属性。`LDAP_ACCOUNT_STATUS_MODE=ad` 校验 AD `userAccountControl`；对于其他 LDAP 可配置 `LDAP_ACCOUNT_STATUS_MODE=active-value`，并设置 `LDAP_ACCOUNT_STATUS_ATTRIBUTE` 和 `LDAP_ACCOUNT_STATUS_ACTIVE_VALUE`，属性缺失、多值或不等于启用值时拒绝。变更身份属性或目录标识会影响已绑定身份，须先制定迁移方案。
 
@@ -102,7 +104,7 @@ docker build --build-arg VITE_FRONTEND_COMMIT="$COMMIT" -t "weknora-ui-ldap:$COM
 3. 在原有 Compose 文件组合之后追加一份仅覆盖 `app.image` 的发布文件，指定固定的二开镜像标签；沿用现有数据库、存储、环境、网络、挂载、Compose 覆盖配置和 sandbox 设置。追加 LDAP 环境及上述只读挂载，确认密码文件权限和容器内 DNS/证书。先用原有全部 `-f` 参数加发布覆盖执行 `docker compose ... config --quiet` 检查配置；完整渲染输出可能含敏感值，不要公开。
 4. 按原有 Compose 文件组合执行 `docker compose ... up -d --no-deps --no-build app`，检查健康状态及不含敏感信息的日志。该命令有短暂重启窗口。不要运行全栈 `pull` 或使用会改变其他服务镜像的操作。若使用项目 frontend 容器，同样通过发布覆盖指定固定 UI 镜像，确认依赖后仅重建 frontend；保留宿主机 Nginx 上游、TLS、WebSocket、上传大小和超时配置。
 5. 若宿主机 Nginx 直接托管静态文件，将 dist 放入新版本目录，保持原版本目录，检查文件所有权及原站 `config.js`；通过站点既有的版本目录或符号链接切换，并用 `nginx -t` 验证配置后按既有流程 reload。保持 `/api/`、`/files`、`/r/` 和其他现有代理路由，避免 SPA fallback 吞掉接口；保留旧 hash 资源足够长时间，以支持仍打开旧页面的用户。若宿主机 Nginx 只是代理项目 frontend 容器，不需要替换宿主机静态文件。
-6. 在部署入口验收：LDAP 正确密码成功；错误及空密码、禁用账号、目录中重复用户名或邮箱均安全失败；CA 或 LDAP 不可用不回退；已允许匹配的已有账号登录后核对用户 ID、系统权限及各空间成员角色；新用户保持 tenantless，管理员邀请后可正常访问和切换空间。验证本地密码、OIDC、邀请、管理员、文件及 sandbox 核心流程。若使用 HTTP 而未在其他代理层提供 HTTPS，浏览器到服务器之间的企业密码会明文传输；LDAP 到域控的 StartTLS 不会加密这一段。不要记录密码或令牌。
+6. 在部署入口验收：LDAP 正确密码成功；错误及空密码、禁用账号、目录中重复用户名或邮箱均安全失败；CA 或 LDAP 不可用不回退；已允许匹配的已有账号登录后核对用户 ID、系统权限及各空间成员角色；新用户保持 tenantless，管理员邀请后可正常访问和切换空间。确认 LDAP 启用时自助修改和管理员重置本地密码均不可用，LDAP 关闭时原有功能恢复；验证本地密码登录、OIDC、邀请、管理员、文件及 sandbox 核心流程。若使用 HTTP 而未在其他代理层提供 HTTPS，浏览器到服务器之间的企业密码会明文传输；LDAP 到域控的 StartTLS 不会加密这一段。不要记录密码或令牌。
 
 Compose `--no-deps` 仅在既有依赖确实运行且健康时使用；具体发布参数应以现场实际配置为准。禁止将完整 `docker inspect`、Compose 配置或认证请求体贴入公开日志。
 

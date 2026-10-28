@@ -797,10 +797,15 @@ func (h *AuthHandler) UpdateMyPreferences(c *gin.Context) {
 // @Param        request  body      object{old_password=string,new_password=string}  true  "密码修改请求"
 // @Success      200      {object}  map[string]interface{}                           "修改成功"
 // @Failure      400      {object}  errors.AppError                                  "请求参数错误"
+// @Failure      403      {object}  errors.AppError                                  "LDAP 已启用，禁止自助修改密码"
 // @Security     Bearer
 // @Router       /auth/change-password [post]
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	ctx := c.Request.Context()
+	if ldapauth.IsEnabled() {
+		_ = c.Error(errors.NewForbiddenError("Password change is disabled while LDAP authentication is enabled"))
+		return
+	}
 
 	logger.Info(ctx, "Start password change")
 
@@ -831,6 +836,9 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	err = h.userService.ChangePassword(ctx, user.ID, req.OldPassword, req.NewPassword)
 	if err != nil {
 		switch {
+		case stderrors.Is(err, service.ErrPasswordChangeDisabled):
+			_ = c.Error(errors.NewForbiddenError("Password change is disabled while LDAP authentication is enabled"))
+			return
 		case service.IsPasswordPolicyError(err):
 			appErr := errors.NewValidationError("Password policy violation").
 				WithDetails(service.DetailPasswordPolicy)

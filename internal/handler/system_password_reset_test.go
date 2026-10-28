@@ -59,6 +59,7 @@ func performPasswordReset(t *testing.T, r *gin.Engine, body map[string]string) *
 }
 
 func TestResetUserPasswordResetsOtherUserAndAuditsWithoutSecret(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	users := &resetPasswordUserService{target: &types.User{
 		ID: "target-user", Username: "alice", Email: "alice@example.com",
 	}}
@@ -83,6 +84,7 @@ func TestResetUserPasswordResetsOtherUserAndAuditsWithoutSecret(t *testing.T) {
 }
 
 func TestResetUserPasswordRejectsSelfReset(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	users := &resetPasswordUserService{target: &types.User{
 		ID: "admin-user", Username: "admin", Email: "admin@example.com",
 	}}
@@ -100,6 +102,7 @@ func TestResetUserPasswordRejectsSelfReset(t *testing.T) {
 }
 
 func TestResetUserPasswordRejectsWeakPasswordBeforeUserLookup(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	users := &resetPasswordUserService{target: &types.User{ID: "target-user"}}
 	h := &SystemHandler{userSvc: users}
 
@@ -111,5 +114,20 @@ func TestResetUserPasswordRejectsWeakPasswordBeforeUserLookup(t *testing.T) {
 	}
 	if users.lookupCalls != 0 || users.resetCalls != 0 {
 		t.Fatalf("weak password caused side effects: lookups=%d resets=%d", users.lookupCalls, users.resetCalls)
+	}
+}
+
+func TestResetUserPasswordDisabledWhenLDAPEnabled(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "true")
+	users := &resetPasswordUserService{target: &types.User{ID: "target-user"}}
+	h := &SystemHandler{userSvc: users}
+	w := performPasswordReset(t, passwordResetRouter(h, "admin-user"), map[string]string{
+		"email": "alice@example.com", "new_password": "FreshPass9",
+	})
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("status=%d, want %d", w.Code, http.StatusForbidden)
+	}
+	if users.lookupCalls != 0 || users.resetCalls != 0 {
+		t.Fatalf("disabled reset caused side effects: lookups=%d resets=%d", users.lookupCalls, users.resetCalls)
 	}
 }

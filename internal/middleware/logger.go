@@ -183,7 +183,11 @@ func Logger() gin.HandlerFunc {
 		raw := c.Request.URL.RawQuery
 		// Authentication payloads can contain arbitrary passwords and tokens,
 		// including malformed or truncated JSON that regex masking cannot protect.
-		omitBody := strings.EqualFold(strings.TrimRight(path, "/"), "/api/v1/auth/ldap/login")
+		var omitBody bool
+		switch strings.ToLower(strings.TrimRight(path, "/")) {
+		case "/api/v1/auth/ldap/login", "/api/v1/auth/change-password", "/api/v1/system/admin/users/reset-password":
+			omitBody = true
+		}
 
 		isWikiStats := strings.HasPrefix(path, "/api/v1/knowledgebase/") && strings.HasSuffix(path, "/wiki/stats")
 		if strings.HasPrefix(path, "/assets/") || isWikiStats {

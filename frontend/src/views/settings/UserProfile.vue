@@ -67,7 +67,7 @@
       </div>
 
       <!-- 修改密码：与其它 setting-row 同款只读行 + 编辑入口，表单进原地 popup -->
-      <div class="setting-row">
+      <div v-if="passwordChangeAllowed" class="setting-row">
         <div class="setting-info">
           <label>{{ $t('userProfile.changePassword.label') }}</label>
           <p class="desc">
@@ -191,6 +191,7 @@ const authStore = useAuthStore()
 
 const userInfo = ref<UserInfo | null>(null)
 const complexPasswordEnabled = ref(false)
+const passwordChangeAllowed = ref(false)
 const loading = ref(true)
 const error = ref('')
 
@@ -207,8 +208,10 @@ const loadPasswordPolicy = async () => {
   try {
     const resp = await getAuthConfig()
     complexPasswordEnabled.value = !!resp.complex_password_enabled
+    passwordChangeAllowed.value = resp.success === true && resp.ldap_enabled === false
   } catch {
     complexPasswordEnabled.value = false
+    passwordChangeAllowed.value = false
   }
 }
 
@@ -223,6 +226,13 @@ watch(passwordPopupVisible, (open) => {
   }
   resetPasswordForm()
   void loadPasswordPolicy()
+})
+
+watch(passwordChangeAllowed, (allowed) => {
+  if (!allowed) {
+    passwordPopupVisible.value = false
+    resetPasswordForm()
+  }
 })
 
 const passwordRules = computed<Record<string, FormRule[]>>(() => ({
@@ -295,7 +305,7 @@ const closePasswordPopup = () => {
 }
 
 const submitPasswordChange = async () => {
-  if (passwordSubmitting.value) return
+  if (!passwordChangeAllowed.value || passwordSubmitting.value) return
   const result = await passwordFormRef.value?.validate?.()
   if (result !== true) return
 
@@ -330,7 +340,10 @@ const submitPasswordChange = async () => {
   }
 }
 
-onMounted(loadInfo)
+onMounted(() => {
+  void loadInfo()
+  void loadPasswordPolicy()
+})
 </script>
 
 <style lang="less" scoped>

@@ -73,7 +73,42 @@ func doChangePassword(t *testing.T, r *gin.Engine, body any) *httptest.ResponseR
 	return w
 }
 
+func TestChangePassword_DisabledWhenLDAPEnabled(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "true")
+	// A nil service makes accidental user lookup or mutation fail the test.
+	h := &AuthHandler{}
+	w := doChangePassword(t, newChangePasswordTestRouter(h), map[string]string{
+		"old_password": "OldSecure9",
+		"new_password": "NewSecure9",
+	})
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusForbidden)
+	}
+}
+
+func TestChangePassword_EnabledWhenLDAPDisabled(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
+	called := false
+	h := &AuthHandler{userService: &stubChangePasswordUserService{
+		getCurrentUser: func(context.Context) (*types.User, error) {
+			return &types.User{ID: "user-1", Email: "alice@example.com"}, nil
+		},
+		changePassword: func(_ context.Context, _, _, _ string) error {
+			called = true
+			return nil
+		},
+	}}
+	w := doChangePassword(t, newChangePasswordTestRouter(h), map[string]string{
+		"old_password": "OldSecure9",
+		"new_password": "NewSecure9",
+	})
+	if w.Code != http.StatusOK || !called {
+		t.Fatalf("status = %d, service called = %v", w.Code, called)
+	}
+}
+
 func TestChangePassword_MapsInvalidOldPasswordDetail(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	h := &AuthHandler{
 		userService: &stubChangePasswordUserService{
 			getCurrentUser: func(ctx context.Context) (*types.User, error) {
@@ -107,6 +142,7 @@ func TestChangePassword_MapsInvalidOldPasswordDetail(t *testing.T) {
 }
 
 func TestChangePassword_MapsSamePasswordDetail(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	h := &AuthHandler{
 		userService: &stubChangePasswordUserService{
 			getCurrentUser: func(ctx context.Context) (*types.User, error) {
@@ -140,6 +176,7 @@ func TestChangePassword_MapsSamePasswordDetail(t *testing.T) {
 }
 
 func TestChangePassword_MapsPasswordPolicyDetail(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	h := &AuthHandler{
 		userService: &stubChangePasswordUserService{
 			getCurrentUser: func(_ context.Context) (*types.User, error) {

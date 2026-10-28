@@ -37,6 +37,30 @@ function compileComponent(source, imports) {
   return Object.assign(evaluate(script.content).default, { render: evaluate(template.code).render })
 }
 
+function createRenderer(teleportTarget = { children: [] }) {
+  return vue.createRenderer({
+    createElement: (tag) => ({ tag, children: [], style: {} }),
+    createText: (text) => ({ text }),
+    createComment: (text) => ({ text }),
+    querySelector: () => teleportTarget,
+    insert(child, parent, anchor) {
+      if (child.parent) child.parent.children = child.parent.children.filter((item) => item !== child)
+      const index = anchor ? parent.children.indexOf(anchor) : -1
+      parent.children.splice(index < 0 ? parent.children.length : index, 0, child)
+      child.parent = parent
+    },
+    remove(child) {
+      if (child.parent) child.parent.children = child.parent.children.filter((item) => item !== child)
+      child.parent = null
+    },
+    parentNode: (node) => node?.parent,
+    nextSibling: (node) => node.parent?.children[node.parent.children.indexOf(node) + 1] ?? null,
+    setText(node, text) { node.text = text },
+    setElementText(node, text) { node.children = []; node.text = text },
+    patchProp(node, key, _, value) { if (key !== 'style') node[key] = value },
+  })
+}
+
 function mountResetRow(email = 'user@example.com') {
   const requests = []
   const notices = []
@@ -67,6 +91,7 @@ function mountResetRow(email = 'user@example.com') {
     const active = ref(true)
     const resetVisibleId = ref(null)
     const resetBusy = ref(false)
+    const passwordChangeAllowed = ref(true)
     const loading = false
     const busyId = null
     const createVisible = false
@@ -78,26 +103,7 @@ function mountResetRow(email = 'user@example.com') {
     const t = (key) => key
     </script>`, { './ResetPasswordDialog.vue': { default: Dialog, __esModule: true } })
 
-  const renderer = vue.createRenderer({
-    createElement: (tag) => ({ tag, children: [], style: {} }),
-    createText: (text) => ({ text }),
-    createComment: (text) => ({ text }),
-    insert(child, parent, anchor) {
-      if (child.parent) child.parent.children = child.parent.children.filter((item) => item !== child)
-      const index = anchor ? parent.children.indexOf(anchor) : -1
-      parent.children.splice(index < 0 ? parent.children.length : index, 0, child)
-      child.parent = parent
-    },
-    remove(child) {
-      if (child.parent) child.parent.children = child.parent.children.filter((item) => item !== child)
-      child.parent = null
-    },
-    parentNode: (node) => node?.parent,
-    nextSibling: (node) => node.parent?.children[node.parent.children.indexOf(node) + 1] ?? null,
-    setText(node, text) { node.text = text },
-    setElementText(node, text) { node.children = []; node.text = text },
-    patchProp(node, key, _, value) { if (key !== 'style') node[key] = value },
-  })
+  const renderer = createRenderer()
   const passthrough = { setup: (_, { slots }) => () => vue.h('div', slots.default?.()) }
   const app = renderer.createApp(Parent)
   for (const name of ['t-button', 't-tag', 't-icon', 't-input', 't-form-item']) app.component(name, passthrough)
@@ -115,6 +121,92 @@ function mountResetRow(email = 'user@example.com') {
   const parent = app._instance.setupState
   return { app, parent, requests, notices, dialog: () => parent.dialogRef.$.setupState }
 }
+
+function mountUserManagement(config) {
+  const passthrough = { setup: (_, { slots }) => () => vue.h('div', slots.default?.()) }
+  const Management = compileComponent(read('./UserManagement.vue'), {
+    'tdesign-vue-next': { MessagePlugin: { success() {}, error() {} } },
+    'vue-i18n': { useI18n: () => ({ t: (key) => key, locale: vue.ref('en-US') }) },
+    '@/api/auth': { getAuthConfig: async () => config },
+    '@/api/system': { listAllUsers: async () => ({ users: [], has_more: false, offset: 0 }) },
+    '@/stores/auth': { useAuthStore: () => ({ currentUserId: 'self' }) },
+    './CreateUserDialog.vue': { default: passthrough, __esModule: true },
+    './ResetPasswordDialog.vue': { default: passthrough, __esModule: true },
+  })
+  const active = vue.ref(false)
+  const renderer = createRenderer()
+  const app = renderer.createApp({ setup: () => () => vue.h(Management, { active: active.value }) })
+  for (const name of ['t-button', 't-icon', 't-input', 't-table', 't-alert', 't-popconfirm', 't-select']) {
+    app.component(name, passthrough)
+  }
+  app.mount({ children: [] })
+  return { app, active, state: app._instance.subTree.component.setupState }
+}
+
+test('administrator reset entry is hidden when password changes are disabled', async (t) => {
+  const { app, parent } = mountResetRow()
+  t.after(() => app.unmount())
+  await flush()
+  assert.ok(parent.dialogRef)
+  parent.passwordChangeAllowed = false
+  await flush()
+  assert.equal(parent.dialogRef, null)
+  parent.passwordChangeAllowed = true
+  await flush()
+  assert.ok(parent.dialogRef)
+})
+
+test('returning to the users tab refreshes LDAP mode and unlocks a hidden reset', async (t) => {
+  const config = { success: true, ldap_enabled: false }
+  const { app, active, state } = mountUserManagement(config)
+  t.after(() => app.unmount())
+  active.value = true
+  await flush()
+  assert.equal(state.passwordChangeAllowed, true)
+  state.resetVisibleId = 'target'
+  active.value = false
+  await flush()
+  config.ldap_enabled = true
+  active.value = true
+  await flush()
+  assert.equal(state.passwordChangeAllowed, false)
+  assert.equal(state.resetVisibleId, null)
+  assert.equal(state.locked, false)
+})
+
+test('LDAP mode change leaves an in-flight reset mounted until it finishes', async (t) => {
+  const { app, parent, requests, dialog } = mountResetRow()
+  t.after(() => app.unmount())
+  parent.resetVisibleId = 'target'
+  await flush()
+  const original = dialog()
+  Object.assign(original.form, { newPassword: 'FirstSecret1!', confirmPassword: 'FirstSecret1!' })
+  const pending = original.submit()
+  await flush()
+  assert.equal(parent.resetBusy, true)
+  parent.passwordChangeAllowed = false
+  await flush()
+  assert.equal(dialog(), original)
+  requests[0].reject(new Error('Reset denied'))
+  await pending
+  await flush()
+  assert.equal(parent.dialogRef, null)
+})
+
+test('LDAP mode change unlocks management after an in-flight reset completes', async (t) => {
+  const { app, state } = mountUserManagement({ success: true, ldap_enabled: false })
+  t.after(() => app.unmount())
+  state.passwordChangeAllowed = true
+  state.resetVisibleId = 'target'
+  state.resetBusy = true
+  state.passwordChangeAllowed = false
+  await flush()
+  assert.equal(state.resetVisibleId, 'target')
+  state.resetBusy = false
+  await flush()
+  assert.equal(state.resetVisibleId, null)
+  assert.equal(state.locked, false)
+})
 
 for (const outcome of ['success', 'failure']) {
   test(`pending reset survives tab changes and reports ${outcome}`, async (t) => {

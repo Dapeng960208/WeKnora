@@ -241,6 +241,7 @@ func TestLogoutRevokesAllUserTokens(t *testing.T) {
 }
 
 func TestAdminResetPasswordHashesPasswordAndRevokesSessions(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	ctx := context.Background()
 	tokenRepo := &stubAuthTokenRepo{tokens: map[string]*types.AuthToken{}}
 	svc := newAuthTestUserService(tokenRepo)
@@ -265,6 +266,7 @@ func TestAdminResetPasswordHashesPasswordAndRevokesSessions(t *testing.T) {
 }
 
 func TestAdminResetPasswordRejectsWeakPasswordBeforeWrite(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	tokenRepo := &stubAuthTokenRepo{tokens: map[string]*types.AuthToken{}}
 	svc := newAuthTestUserService(tokenRepo)
 	repo := svc.userRepo.(*stubUserRepoForAuth)
@@ -280,6 +282,7 @@ func TestAdminResetPasswordRejectsWeakPasswordBeforeWrite(t *testing.T) {
 }
 
 func TestChangePasswordRequiresPolicyAndRevokesSessions(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	ctx := context.Background()
 	tokenRepo := &stubAuthTokenRepo{tokens: map[string]*types.AuthToken{}}
 	svc := newAuthTestUserService(tokenRepo)
@@ -315,6 +318,7 @@ func TestChangePasswordRequiresPolicyAndRevokesSessions(t *testing.T) {
 }
 
 func TestChangePasswordRejectsSamePassword(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	ctx := context.Background()
 	tokenRepo := &stubAuthTokenRepo{tokens: map[string]*types.AuthToken{}}
 	svc := newAuthTestUserService(tokenRepo)
@@ -335,6 +339,7 @@ func TestChangePasswordRejectsSamePassword(t *testing.T) {
 }
 
 func TestChangePasswordHonoursRuntimeComplexPolicy(t *testing.T) {
+	t.Setenv("LDAP_ENABLED", "false")
 	ctx := context.Background()
 	tokenRepo := &stubAuthTokenRepo{tokens: map[string]*types.AuthToken{}}
 	svc := newAuthTestUserService(tokenRepo)

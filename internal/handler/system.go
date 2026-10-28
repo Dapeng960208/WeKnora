@@ -18,6 +18,7 @@ import (
 	"github.com/Tencent/WeKnora/internal/application/repository"
 	"github.com/Tencent/WeKnora/internal/application/service"
 	"github.com/Tencent/WeKnora/internal/application/service/file"
+	"github.com/Tencent/WeKnora/internal/auth/ldapauth"
 	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/database"
 	apperrors "github.com/Tencent/WeKnora/internal/errors"
@@ -1653,10 +1654,14 @@ type ResetUserPasswordRequest struct {
 // @Param        request body ResetUserPasswordRequest true "Password reset request"
 // @Success      200  {object}  map[string]interface{}  "Password reset successfully"
 // @Failure      400  {object}  map[string]interface{}  "Invalid request, weak password, or self reset"
-// @Failure      403  {object}  map[string]interface{}  "Forbidden: not a system admin"
+// @Failure      403  {object}  map[string]interface{}  "Forbidden: not a system admin or LDAP is enabled"
 // @Failure      404  {object}  map[string]interface{}  "User not found"
 // @Router       /system/admin/users/reset-password [post]
 func (h *SystemHandler) ResetUserPassword(c *gin.Context) {
+	if ldapauth.IsEnabled() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Password reset is disabled while LDAP authentication is enabled"})
+		return
+	}
 	ctx := logger.CloneContext(c.Request.Context())
 
 	var req ResetUserPasswordRequest
@@ -1683,6 +1688,10 @@ func (h *SystemHandler) ResetUserPassword(c *gin.Context) {
 	}
 
 	if err := h.userSvc.AdminResetPassword(ctx, user.ID, req.NewPassword); err != nil {
+		if errors.Is(err, service.ErrPasswordChangeDisabled) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Password reset is disabled while LDAP authentication is enabled"})
+			return
+		}
 		if service.IsPasswordPolicyError(err) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return

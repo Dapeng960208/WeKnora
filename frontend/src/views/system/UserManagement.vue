@@ -65,11 +65,11 @@
           <template #created="{ row }"><span class="user-management__date">{{ formatDate(row.created_at) }}</span></template>
           <template #actions="{ row }">
             <div class="user-management__actions">
-              <ResetPasswordDialog :visible="resetVisibleId === row.id" :active="active" :email="row.email"
+              <ResetPasswordDialog v-if="passwordChangeAllowed || (resetBusy && resetVisibleId === row.id)" :visible="resetVisibleId === row.id" :active="active" :email="row.email"
                 @update:visible="value => { resetVisibleId = value ? row.id : null }"
                 @busy-change="resetBusy = $event" @announced="announce">
                 <t-button variant="text" class="user-management__action"
-                  :disabled="loading || busyId !== null || resetBusy || (resetVisibleId !== null && resetVisibleId !== row.id) || createVisible || row.id === authStore.currentUserId || !row.is_active"
+                  :disabled="!passwordChangeAllowed || loading || busyId !== null || resetBusy || (resetVisibleId !== null && resetVisibleId !== row.id) || createVisible || row.id === authStore.currentUserId || !row.is_active"
                   :title="t('system.globalSettings.userList.resetPassword')" :aria-label="t('system.globalSettings.userList.resetPassword')">
                   {{ t('system.globalSettings.userList.resetPassword') }}
                 </t-button>
@@ -112,6 +112,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { MessagePlugin } from 'tdesign-vue-next'
 import { listAllUsers, setUserStatus, promoteUserToSystemAdmin, revokeSystemAdmin, type SystemAdminUser } from '@/api/system'
+import { getAuthConfig } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import CreateUserDialog from './CreateUserDialog.vue'
 import ResetPasswordDialog from './ResetPasswordDialog.vue'
@@ -132,8 +133,12 @@ const pendingRole = ref<SystemAdminUser | null>(null)
 const statusVisibleId = ref<string | null>(null)
 const resetVisibleId = ref<string | null>(null)
 const resetBusy = ref(false)
+const passwordChangeAllowed = ref(false)
 const createVisible = ref(false)
 const locked = computed(() => busyId.value !== null || resetVisibleId.value !== null || createVisible.value)
+watch([passwordChangeAllowed, resetBusy], ([allowed, busy]) => {
+  if (!allowed && !busy) resetVisibleId.value = null
+})
 const roleOptions = computed(() => [
   { value: 'user', label: t('system.globalSettings.userList.roleUser') },
   { value: 'admin', label: t('system.globalSettings.userList.roleAdmin') },
@@ -157,6 +162,14 @@ function errorMessage(error: any, key: string): string {
   return error?.response?.data?.error || error?.message || t(key)
 }
 function announce(message: string) { emit('announced', message) }
+async function loadPasswordAuthMode() {
+  try {
+    const config = await getAuthConfig()
+    passwordChangeAllowed.value = config.success === true && config.ldap_enabled === false
+  } catch {
+    passwordChangeAllowed.value = false
+  }
+}
 async function fetchPage(nextOffset: number) {
   if (loading.value || resetBusy.value) return
   loading.value = true
@@ -197,7 +210,10 @@ async function changeRole(row: SystemAdminUser) {
   finally { busyId.value = null; pendingRole.value = null }
 }
 watch(() => props.active, active => {
-  if (active && !locked.value) fetchPage(offset.value)
+  if (active) {
+    void loadPasswordAuthMode()
+    if (!locked.value) void fetchPage(offset.value)
+  }
   if (!active) { pendingRole.value = null; statusVisibleId.value = null }
 }, { immediate: true })
 </script>
